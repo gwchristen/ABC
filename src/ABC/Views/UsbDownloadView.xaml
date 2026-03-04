@@ -39,11 +39,10 @@
                                   Style="{StaticResource ModernComboBox}"
                                   ItemsSource="{Binding AvailablePorts}"
                                   SelectedItem="{Binding SelectedPort}"
-                                  DisplayMemberPath="."
                                   IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding StringFormat='COM\{0\}'}" />
+                                    <TextBlock Text="{Binding StringFormat='COM {0}'}" />
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
@@ -104,7 +103,7 @@
                         <TextBlock Grid.Row="4" Grid.Column="2" Text="{Binding ScannerInfo.BarcodeCount}" Style="{StaticResource InfoValue}" />
 
                         <TextBlock Grid.Row="5" Grid.Column="0" Text="COM Port:" Style="{StaticResource InfoLabel}" />
-                        <TextBlock Grid.Row="5" Grid.Column="2" Text="{Binding ScannerInfo.ComPort, StringFormat='COM\{0\}'}" Style="{StaticResource InfoValue}" />
+                        <TextBlock Grid.Row="5" Grid.Column="2" Text="{Binding ScannerInfo.ComPort, StringFormat='COM {0}'}" Style="{StaticResource InfoValue}" />
                     </Grid>
                 </StackPanel>
             </Border>
@@ -176,7 +175,7 @@
                            Style="{StaticResource SectionHeader}"
                            VerticalAlignment="Center"
                            Margin="0,0,12,0" />
-                <TextBlock Text="{Binding Barcodes.Count, StringFormat='\{0\} barcode(s)'}"
+                <TextBlock Text="{Binding Barcodes.Count, StringFormat='{}{0} barcode(s)'}"
                            Style="{StaticResource InfoLabel}"
                            VerticalAlignment="Center" />
 
