@@ -1,0 +1,204 @@
+<UserControl x:Class="ABC.Views.BluetoothLiveView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:converters="clr-namespace:ABC.Converters"
+             xmlns:vm="clr-namespace:ABC.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:BluetoothLiveViewModel}"
+             Background="{StaticResource WindowBackground}">
+
+    <UserControl.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+        <converters:InverseBoolConverter x:Key="InverseBool" />
+    </UserControl.Resources>
+
+    <Grid Margin="8">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="8" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ===== Left Panel: Bluetooth Settings ===== -->
+        <StackPanel Grid.Column="0">
+
+            <!-- Connection Card -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="Bluetooth Connection" Style="{StaticResource SectionHeader}" />
+
+                    <!-- Connection status -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <Ellipse Style="{StaticResource StatusDot}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="12">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Disconnected" />
+                                    <Setter Property="Foreground" Value="#CC0000" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                            <Setter Property="Text" Value="Connected" />
+                                            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- Port Selection -->
+                    <TextBlock Text="COM Port:" Style="{StaticResource InfoLabel}" Margin="0,0,0,4" />
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="4" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox Grid.Column="0"
+                                  Style="{StaticResource ModernComboBox}"
+                                  ItemsSource="{Binding AvailablePorts}"
+                                  SelectedItem="{Binding SelectedPort}"
+                                  IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBool}}" />
+                        <Button Grid.Column="2"
+                                Content="↻"
+                                Style="{StaticResource SecondaryButton}"
+                                Command="{Binding RefreshPortsCommand}"
+                                MinWidth="36" Padding="8,6"
+                                IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBool}}" />
+                    </Grid>
+
+                    <!-- Baud Rate (display only) -->
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Baud Rate:" Style="{StaticResource InfoLabel}" />
+                        <TextBlock Grid.Column="2" Text="115200" Style="{StaticResource InfoValue}" />
+                    </Grid>
+
+                    <!-- Connect / Disconnect buttons -->
+                    <Button Content="Connect"
+                            Style="{StaticResource AccentButton}"
+                            Command="{Binding ConnectCommand}"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,0,0,4"
+                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+
+                    <Button Content="Disconnect"
+                            Style="{StaticResource DangerButton}"
+                            Command="{Binding DisconnectCommand}"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,0,0,4"
+                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}}" />
+
+                    <!-- Scan Count -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Scan Count:" Style="{StaticResource InfoLabel}" />
+                        <TextBlock Grid.Column="2" Text="{Binding BarcodeCount}" Style="{StaticResource InfoValue}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Options Card -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="Display Options" Style="{StaticResource SectionHeader}" />
+                    <CheckBox Content="Show timestamps"
+                              IsChecked="{Binding ShowTimestamps}"
+                              Margin="0,0,0,4" />
+                </StackPanel>
+            </Border>
+
+            <!-- Save Options Card -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="Save Options" Style="{StaticResource SectionHeader}" />
+
+                    <!-- Directory -->
+                    <TextBlock Text="Directory:" Style="{StaticResource InfoLabel}" Margin="0,0,0,4" />
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="4" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0"
+                                 Style="{StaticResource ModernTextBox}"
+                                 Text="{Binding SaveDirectory, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button Grid.Column="2"
+                                Content="..."
+                                Style="{StaticResource SecondaryButton}"
+                                Command="{Binding BrowseDirectoryCommand}"
+                                MinWidth="36" Padding="8,6" />
+                    </Grid>
+
+                    <!-- Filename -->
+                    <TextBlock Text="Filename:" Style="{StaticResource InfoLabel}" Margin="0,0,0,4" />
+                    <TextBox Style="{StaticResource ModernTextBox}"
+                             Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}"
+                             Margin="0,0,0,8" />
+
+                    <!-- Format -->
+                    <TextBlock Text="Format:" Style="{StaticResource InfoLabel}" Margin="0,0,0,4" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <RadioButton Content=".txt" IsChecked="{Binding SaveAsCsv, Converter={StaticResource InverseBool}}"
+                                     Margin="0,0,12,0" VerticalAlignment="Center" />
+                        <RadioButton Content=".csv" IsChecked="{Binding SaveAsCsv}"
+                                     VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <Button Content="Save"
+                            Style="{StaticResource AccentButton}"
+                            Command="{Binding SaveCommand}"
+                            HorizontalAlignment="Stretch" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- Splitter -->
+        <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"
+                      Background="{StaticResource BorderBrush}" />
+
+        <!-- ===== Right Panel: Live Scan View ===== -->
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                <TextBlock Text="Live Scan Feed"
+                           Style="{StaticResource SectionHeader}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,12,0" />
+                <Button Content="Clear"
+                        Style="{StaticResource SecondaryButton}"
+                        Command="{Binding ClearDisplayCommand}"
+                        Padding="8,4" FontSize="12" />
+            </StackPanel>
+
+            <Border Grid.Row="1" Style="{StaticResource CardBorder}" Margin="0">
+                <TextBox Text="{Binding LiveText, Mode=OneWay}"
+                         IsReadOnly="True"
+                         TextWrapping="NoWrap"
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Auto"
+                         FontFamily="Consolas, Courier New"
+                         FontSize="13"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Padding="4"
+                         x:Name="LiveTextBox" />
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
