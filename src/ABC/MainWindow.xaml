@@ -1,0 +1,48 @@
+<Window x:Class="ABC.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:ABC.Views"
+        mc:Ignorable="d"
+        Title="AEP Barcode Companion"
+        Height="700" Width="1000"
+        MinHeight="600" MinWidth="800"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource WindowBackground}">
+
+    <Window.Resources>
+        <Style TargetType="TabControl" BasedOn="{StaticResource ModernTabControl}" />
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Main Tab Control -->
+        <TabControl Grid.Row="0" Margin="8,8,8,4">
+            <TabItem Header="USB Download">
+                <views:UsbDownloadView DataContext="{Binding UsbDownload}" />
+            </TabItem>
+            <TabItem Header="Bluetooth Live Scan">
+                <views:BluetoothLiveView DataContext="{Binding BluetoothLive}" />
+            </TabItem>
+        </TabControl>
+
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="1" Background="{StaticResource StatusBarBackground}">
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource StatusBarForeground}" />
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Barcodes: " Foreground="{StaticResource StatusBarForeground}" />
+                    <TextBlock Text="{Binding TotalBarcodeCount}" Foreground="{StaticResource StatusBarForeground}" />
+                </StackPanel>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>
