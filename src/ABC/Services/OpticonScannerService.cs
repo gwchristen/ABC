@@ -17,30 +17,52 @@ public class OpticonScannerService : IScannerService
 
     public bool IsConnected => _isConnected;
 
+    /// <summary>
+    /// Gets the last error message from detection or connection attempts.
+    /// Used for diagnostic purposes when detection silently fails.
+    /// </summary>
+    public string? LastError { get; private set; }
+
     public List<int> DetectScanners()
     {
+        LastError = null;
         try
         {
             var csp2Type = LoadCsp2Type();
             if (csp2Type is null)
+            {
+                // LastError is already set by LoadCsp2Type
                 return new List<int>();
+            }
 
             // csp2GetOpnCompatiblePorts returns a comma-separated list of COM port numbers
             dynamic csp2 = Activator.CreateInstance(csp2Type)!;
             var portsResult = csp2.csp2GetOpnCompatiblePorts();
             var ports = new List<int>();
-            if (!string.IsNullOrWhiteSpace((string)portsResult))
+
+            if (portsResult is null)
             {
-                foreach (var p in ((string)portsResult).Split(','))
-                {
-                    if (int.TryParse(p.Trim(), out int port))
-                        ports.Add(port);
-                }
+                LastError = "csp2GetOpnCompatiblePorts returned null. Ensure scanner is connected via USB and powered on.";
+                return ports;
+            }
+
+            string portsString = (string)portsResult;
+            if (string.IsNullOrWhiteSpace(portsString))
+            {
+                LastError = "csp2GetOpnCompatiblePorts returned empty. No Opticon-compatible COM ports found. Check USB connection and drivers.";
+                return ports;
+            }
+
+            foreach (var p in portsString.Split(','))
+            {
+                if (int.TryParse(p.Trim(), out int port))
+                    ports.Add(port);
             }
             return ports;
         }
-        catch
+        catch (Exception ex)
         {
+            LastError = $"DetectScanners exception: {ex.GetType().Name}: {ex.Message}";
             return new List<int>();
         }
     }
@@ -156,16 +178,31 @@ public class OpticonScannerService : IScannerService
         }
     }
 
-    private static Type? LoadCsp2Type()
+    private Type? LoadCsp2Type()
     {
         try
         {
             string dllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Opticon.csp2.net.dll");
+            if (!File.Exists(dllPath))
+            {
+                LastError = $"Opticon DLL not found at: {dllPath}";
+                return null;
+            }
+
             var assembly = System.Reflection.Assembly.LoadFrom(dllPath);
-            return assembly.GetType("Opticon.Csp2");
+            var csp2Type = assembly.GetType("Opticon.Csp2");
+            if (csp2Type is null)
+            {
+                var availableTypes = string.Join(", ", assembly.GetExportedTypes().Select(t => t.FullName));
+                LastError = $"Type 'Opticon.Csp2' not found in assembly. Available types: {availableTypes}";
+            }
+            return csp2Type;
         }
-        catch
+        catch (Exception ex)
         {
+            LastError = $"LoadCsp2Type failed: {ex.GetType().Name}: {ex.Message}";
+            if (ex.InnerException != null)
+                LastError += $" Inner: {ex.InnerException.Message}";
             return null;
         }
     }
