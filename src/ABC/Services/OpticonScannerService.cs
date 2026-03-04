@@ -159,7 +159,8 @@ public class OpticonScannerService : IScannerService
     {
         try
         {
-            var assembly = System.Reflection.Assembly.LoadFrom("Opticon.csp2.net.dll");
+            string dllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Opticon.csp2.net.dll");
+            var assembly = System.Reflection.Assembly.LoadFrom(dllPath);
             return assembly.GetType("Opticon.Csp2");
         }
         catch
