@@ -299,7 +299,7 @@ public class OpticonScannerService : IScannerService
                 deviceId = idArgs[0] as string ?? "";
             }
 
-            for (int i = 1; i <= count; i++)
+            for (int i = 0; i < count; i++)
             {
                 if (getPacketMethod == null || packetType == null)
                     break;
@@ -314,7 +314,7 @@ public class OpticonScannerService : IScannerService
                     DateTime timestamp = DateTime.Now;
 
                     // Log all fields on first iteration for debugging
-                    if (i == 1)
+                    if (i == 0)
                     {
                         var allFields = packetType.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] BarCodeDataPacket fields:");
@@ -373,7 +373,7 @@ public class OpticonScannerService : IScannerService
                         Timestamp = timestamp,
                         CodeType = codeType,
                         ScannerId = deviceId ?? "",
-                        SequenceNumber = i
+                        SequenceNumber = i + 1
                     });
                 }
             }
