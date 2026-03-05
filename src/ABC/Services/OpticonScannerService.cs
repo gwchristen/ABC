@@ -11,6 +11,11 @@ namespace ABC.Services;
 /// </summary>
 public class OpticonScannerService : IScannerService
 {
+    private const System.Reflection.BindingFlags AllDeclaredBindingFlags =
+        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic |
+        System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance |
+        System.Reflection.BindingFlags.DeclaredOnly;
+
     private bool _isConnected;
     private int _connectedPort;
     private Type? _csp2Type;
@@ -205,8 +210,22 @@ public class OpticonScannerService : IScannerService
         var method = _csp2Type?.GetMethod(methodName);
         if (method == null)
         {
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Method '{methodName}' not found on type '{_csp2Type?.FullName}'");
-            return null;
+            // Try all binding flags to find the method regardless of visibility or instance/static
+            method = _csp2Type?.GetMethod(methodName, AllDeclaredBindingFlags & ~System.Reflection.BindingFlags.DeclaredOnly);
+            if (method != null)
+            {
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Method '{methodName}' found with extended binding flags (IsStatic={method.IsStatic}, IsPublic={method.IsPublic})");
+                if (!method.IsStatic)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Method '{methodName}' is an instance method and cannot be invoked without an instance; skipping");
+                    return null;
+                }
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Method '{methodName}' not found on type '{_csp2Type?.FullName}'");
+                return null;
+            }
         }
         var result = method.Invoke(null, args.Length > 0 ? args : Array.Empty<object>());
         System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] {methodName} returned: {result} (type: {result?.GetType().Name ?? "null"})");
@@ -238,6 +257,13 @@ public class OpticonScannerService : IScannerService
             else
             {
                 System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: type 'Opticon.csp2' loaded successfully");
+                var allMethods = csp2Type.GetMethods(AllDeclaredBindingFlags);
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: found {allMethods.Length} declared methods:");
+                foreach (var m in allMethods)
+                {
+                    var parameters = string.Join(", ", m.GetParameters().Select(p => $"{p.ParameterType.Name} {p.Name}"));
+                    System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   {(m.IsStatic ? "static " : "")}{m.ReturnType.Name} {m.Name}({parameters})");
+                }
             }
             return csp2Type;
         }
