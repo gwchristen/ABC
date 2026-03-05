@@ -321,9 +321,10 @@ public class OpticonScannerService : IScannerService
 
                     try
                     {
-                        var barcodeField = packetType.GetField("BarData") ?? packetType.GetField("barData") ?? packetType.GetField("Data");
-                        var codeTypeField = packetType.GetField("CodeId") ?? packetType.GetField("codeId") ?? packetType.GetField("CodeType");
-                        var timeField = packetType.GetField("TimeStamp") ?? packetType.GetField("timeStamp");
+                        var barcodeField = packetType.GetField("strBarData");
+                        var codeTypeField = packetType.GetField("strId");
+                        var codeIdField = packetType.GetField("iId");
+                        var timeField = packetType.GetField("dtTimestamp");
 
                         if (barcodeField != null)
                         {
@@ -334,6 +335,11 @@ public class OpticonScannerService : IScannerService
                         if (codeTypeField != null)
                         {
                             var val = codeTypeField.GetValue(args[0]);
+                            codeType = val?.ToString() ?? "";
+                        }
+                        if (string.IsNullOrEmpty(codeType) && codeIdField != null)
+                        {
+                            var val = codeIdField.GetValue(args[0]);
                             codeType = val?.ToString() ?? "";
                         }
 
