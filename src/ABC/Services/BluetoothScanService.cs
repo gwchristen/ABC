@@ -91,10 +91,13 @@ public class BluetoothScanService : IBluetoothScanService
             ScanningMode = BluetoothLEScanningMode.Active
         };
 
-        // Filter to Opticon scanners by their advertised Scanner Service UUID
-        _bleWatcher.AdvertisementFilter.Advertisement.ServiceUuids.Add(ScannerServiceUuid);
+        // Do NOT filter by ServiceUuids here — Opticon scanners (OPN-2001 through OPN-6000)
+        // do not include service UUIDs in their advertisement packets. UUIDs are only
+        // discoverable after establishing a GATT connection via service discovery.
+        // Name-based filtering is applied in OnBleAdvertisementReceived instead.
 
         _bleWatcher.Received += OnBleAdvertisementReceived;
+        _bleWatcher.Stopped += OnBleWatcherStopped;
         _bleWatcher.Start();
 
         Debug.WriteLine("[BLE] Started BLE discovery");
@@ -106,6 +109,7 @@ public class BluetoothScanService : IBluetoothScanService
         if (_bleWatcher != null)
         {
             _bleWatcher.Received -= OnBleAdvertisementReceived;
+            _bleWatcher.Stopped -= OnBleWatcherStopped;
             if (_bleWatcher.Status == BluetoothLEAdvertisementWatcherStatus.Started)
                 _bleWatcher.Stop();
             _bleWatcher = null;
@@ -217,14 +221,29 @@ public class BluetoothScanService : IBluetoothScanService
 
     private void OnBleAdvertisementReceived(BluetoothLEAdvertisementWatcher sender, BluetoothLEAdvertisementReceivedEventArgs args)
     {
+        var localName = args.Advertisement.LocalName;
+
+        // Skip devices with no name to avoid flooding the UI with unnamed BLE peripherals.
+        // Opticon scanners advertise with recognizable name prefixes (e.g. "OPN-", "PX-", "RS-").
+        if (string.IsNullOrEmpty(localName))
+        {
+            Debug.WriteLine($"[BLE] Skipped unnamed device {args.BluetoothAddress:X12}");
+            return;
+        }
+
         var deviceInfo = new BleDeviceInfo
         {
-            Name = args.Advertisement.LocalName,
+            Name = localName,
             BluetoothAddress = args.BluetoothAddress
         };
 
         Debug.WriteLine($"[BLE] Discovered: {deviceInfo.DisplayName}");
         BleDeviceDiscovered?.Invoke(this, deviceInfo);
+    }
+
+    private void OnBleWatcherStopped(BluetoothLEAdvertisementWatcher sender, BluetoothLEAdvertisementWatcherStoppedEventArgs args)
+    {
+        Debug.WriteLine($"[BLE] Watcher stopped. Error: {args.Error}");
     }
 
     private void OnBleCharacteristicValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
