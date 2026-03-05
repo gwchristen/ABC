@@ -30,7 +30,12 @@ public class BluetoothScanService : IBluetoothScanService
     private GattCharacteristic? _readCharacteristic;
     private bool _isBleConnected;
 
+    // HID fields
+    private bool _isHidListening;
+
     public bool IsConnected => (_serialPort?.IsOpen ?? false) || _isBleConnected;
+
+    public bool IsHidListening => _isHidListening;
 
     public event EventHandler<BarcodeEntry>? BarcodeReceived;
     public event EventHandler<BleDeviceInfo>? BleDeviceDiscovered;
@@ -39,6 +44,16 @@ public class BluetoothScanService : IBluetoothScanService
     public string[] GetAvailableComPorts()
     {
         return SerialPort.GetPortNames();
+    }
+
+    public void StartHidListening()
+    {
+        _isHidListening = true;
+    }
+
+    public void StopHidListening()
+    {
+        _isHidListening = false;
     }
 
     public bool Connect(string portName, int baudRate = 115200)
