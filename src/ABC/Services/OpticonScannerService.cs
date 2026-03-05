@@ -296,10 +296,10 @@ public class OpticonScannerService : IScannerService
                 if (getPacketMethod == null || packetType == null)
                     break;
 
-                object?[] args = new object?[] { packetType.IsValueType ? Activator.CreateInstance(packetType) : null, i };
+                object?[] args = new object?[] { Activator.CreateInstance(packetType), i };
                 int result = (int)(getPacketMethod.Invoke(null, args) ?? -1);
                 System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetPacket({i}) returned: {result}, packet is {(args[0] != null ? "not null" : "null")}");
-                if (result == 0 && args[0] != null)
+                if (result >= 0 && args[0] != null)
                 {
                     string barcodeData = "";
                     string codeType = "";
@@ -363,6 +363,7 @@ public class OpticonScannerService : IScannerService
                     });
                 }
             }
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] ReadAllBarcodes returning {barcodes.Count} barcode(s)");
             return barcodes;
         }
         catch (Exception ex)
