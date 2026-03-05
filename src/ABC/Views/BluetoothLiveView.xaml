@@ -37,6 +37,11 @@
                         <RadioButton Content="BLE"
                                      IsChecked="{Binding IsBleMode}"
                                      IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBool}}"
+                                     Margin="0,0,16,0"
+                                     VerticalAlignment="Center" />
+                        <RadioButton Content="HID (Keyboard)"
+                                     IsChecked="{Binding IsHidMode}"
+                                     IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBool}}"
                                      VerticalAlignment="Center" />
                     </StackPanel>
                 </StackPanel>
@@ -191,6 +196,74 @@
                             HorizontalAlignment="Stretch"
                             Margin="0,0,0,4"
                             Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}}" />
+
+                    <!-- Scan Count -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Scan Count:" Style="{StaticResource InfoLabel}" />
+                        <TextBlock Grid.Column="2" Text="{Binding BarcodeCount}" Style="{StaticResource InfoValue}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- HID Connection Card -->
+            <Border Style="{StaticResource CardBorder}"
+                    Visibility="{Binding IsHidMode, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="HID Connection" Style="{StaticResource SectionHeader}" />
+
+                    <!-- Connection status -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <Ellipse Style="{StaticResource StatusDot}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="12">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Not Listening" />
+                                    <Setter Property="Foreground" Value="#CC0000" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsHidListening}" Value="True">
+                                            <Setter Property="Text" Value="Listening" />
+                                            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- Start / Stop Listening button -->
+                    <Button HorizontalAlignment="Stretch"
+                            Margin="0,0,0,8"
+                            Command="{Binding ToggleHidCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource AccentButton}">
+                                <Setter Property="Content" Value="Start Listening" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsHidListening}" Value="True">
+                                        <Setter Property="Content" Value="Stop Listening" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <!-- Info note -->
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               Text="Scanner must be paired in Windows Bluetooth settings and set to HID mode. Barcodes will be captured as keyboard input." />
+
+                    <!-- Focus warning -->
+                    <Border Background="#FFF3CD" BorderBrush="#FFC107" BorderThickness="1"
+                            CornerRadius="4" Padding="8,6" Margin="0,0,0,8"
+                            Visibility="{Binding ShowFocusWarning, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock TextWrapping="Wrap" FontSize="11"
+                                   Foreground="#856404"
+                                   Text="⚠ Window is not focused. Click the app window to capture scanner input." />
+                    </Border>
 
                     <!-- Scan Count -->
                     <Grid>
