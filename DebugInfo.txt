@@ -1,0 +1,98 @@
+[OpticonScannerService] Connect to COM9
+[OpticonScannerService] LoadCsp2Type: trying DLL path: C:\Users\s245451\source\repos\ABC\src\ABC\bin\x86\Debug\net8.0-windows10.0.22621.0\Opticon.csp2.net.dll
+[OpticonScannerService] LoadCsp2Type: DLL found, loading assembly
+[OpticonScannerService] LoadCsp2Type: type 'Opticon.csp2' loaded successfully
+[OpticonScannerService] LoadCsp2Type: found 69 declared methods:
+[OpticonScannerService]   static Int32 Init(Int32 nComPort)
+[OpticonScannerService]   static Int32 Restore()
+[OpticonScannerService]   static Int32 Restore(Int32 nComPort)
+[OpticonScannerService]   static Int32 WakeUp()
+[OpticonScannerService]   static Int32 WakeUp(Int32 nComPort)
+[OpticonScannerService]   static Int32 DataAvailable()
+[OpticonScannerService]   static Int32 DataAvailable(Int32 nComPort)
+[OpticonScannerService]   static Int32 ReadData()
+[OpticonScannerService]   static Int32 ReadData(Int32 nComPort)
+[OpticonScannerService]   static Int32 ClearData()
+[OpticonScannerService]   static Int32 ClearData(Int32 nComPort)
+[OpticonScannerService]   static Int32 PowerDown()
+[OpticonScannerService]   static Int32 PowerDown(Int32 nComPort)
+[OpticonScannerService]   static Int32 _GetTime(Byte[] aTimeBuf)
+[OpticonScannerService]   static Int32 _GetTime(Byte[] aTimeBuf, Int32 nComPort)
+[OpticonScannerService]   static Int32 GetTime(DateTime& Time)
+[OpticonScannerService]   static Int32 GetTime(DateTime& Time, Int32 nComPort)
+[OpticonScannerService]   static Int32 _SetTime(Byte[] aTimeBuf)
+[OpticonScannerService]   static Int32 _SetTime(Byte[] aTimeBuf, Int32 nComPort)
+[OpticonScannerService]   static Int32 SetTime(DateTime Time)
+[OpticonScannerService]   static Int32 SetTime(DateTime Time, Int32 nComPort)
+[OpticonScannerService]   static Int32 SetDefaults()
+[OpticonScannerService]   static Int32 SetDefaults(Int32 nComPort)
+[OpticonScannerService]   static DateTime TimeStampToDateTime(Byte[] Stamp)
+[OpticonScannerService]   static Int32 _GetPacket(Byte[] BarData, Int32 nBarcodeNumber, Int32 nMaxLength)
+[OpticonScannerService]   static Int32 _GetPacket(Byte[] BarData, Int32 nBarcodeNumber, Int32 nMaxLength, Int32 nComPort)
+[OpticonScannerService]   static Int32 GetPacket(BarCodeDataPacket& aPacket, Int32 nBarcodeNumber)
+[OpticonScannerService]   static Int32 GetPacket(BarCodeDataPacket& aPacket, Int32 nBarcodeNumber, Int32 nComPort)
+[OpticonScannerService]   static Int32 _GetDeviceId(Byte[] DeviceId, Int32 nMaxLength)
+[OpticonScannerService]   static Int32 _GetDeviceId(Byte[] DeviceId, Int32 nMaxLength, Int32 nComPort)
+[OpticonScannerService]   static Int32 GetDeviceId(String& DeviceId)
+[OpticonScannerService]   static Int32 GetDeviceId(String& DeviceId, Int32 nComPort)
+[OpticonScannerService]   static Int32 GetProtocol()
+[OpticonScannerService]   static Int32 GetProtocol(Int32 nComPort)
+[OpticonScannerService]   static Int32 GetSystemStatus()
+[OpticonScannerService]   static Int32 GetSystemStatus(Int32 nComPort)
+[OpticonScannerService]   static Int32 GetSwVersion(StringBuilder szSwVersion, Int32 nMaxLength)
+[OpticonScannerService]   static Int32 GetSwVersion(StringBuilder szSwVersion, Int32 nMaxLength, Int32 nComPort)
+[OpticonScannerService]   static Int32 GetASCIIMode()
+[OpticonScannerService]   static Int32 GetASCIIMode(Int32 nComPort)
+[OpticonScannerService]   static Int32 GetRTCMode()
+[OpticonScannerService]   static Int32 GetRTCMode(Int32 nComPort)
+[OpticonScannerService]   static Int32 SetRetryCount(Int32 nRetryCount)
+[OpticonScannerService]   static Int32 GetRetryCount()
+[OpticonScannerService]   static Int32 GetDllVersion(StringBuilder szDllVersion, Int32 nMaxLength)
+[OpticonScannerService]   static Int32 TimeStampToStr(Byte[] Stamp, StringBuilder szTimeStampResult, Int32 nMaxLength)
+[OpticonScannerService]   static Int32 TimeStampToStrEx(Byte[] Stamp, StringBuilder szTimeStampResult, Int32 nMaxLength)
+[OpticonScannerService]   static Int32 GetCodeType(Int32 CodeID, Char[] CodeType, Int32 nMaxLength)
+[OpticonScannerService]   static Int32 ReadRawData(Byte[] aBuffer, Int32 nMaxLength)
+[OpticonScannerService]   static Int32 ReadRawData(Byte[] aBuffer, Int32 nMaxLength, Int32 nComPort)
+[OpticonScannerService]   static Int32 SetParam(Int32 nParam, Byte[] szString, Int32 nMaxLength)
+[OpticonScannerService]   static Int32 SetParam(Int32 nParam, Byte[] szString, Int32 nMaxLength, Int32 nComPort)
+[OpticonScannerService]   static Int32 GetParam(Int32 nParam, Byte[] szString, Int32 nMaxLength)
+[OpticonScannerService]   static Int32 GetParam(Int32 nParam, Byte[] szString, Int32 nMaxLength, Int32 nComPort)
+[OpticonScannerService]   static Int32 Interrogate()
+[OpticonScannerService]   static Int32 Interrogate(Int32 nComPort)
+[OpticonScannerService]   static Int32 GetCTS()
+[OpticonScannerService]   static Int32 GetCTS(Int32 nComPort)
+[OpticonScannerService]   static Int32 SetDTR(Int32 nOnOff)
+[OpticonScannerService]   static Int32 SetDTR(Int32 nOnOff, Int32 nComPort)
+[OpticonScannerService]   static Int32 GetDSR()
+[OpticonScannerService]   static Int32 GetDSR(Int32 nComPort)
+[OpticonScannerService]   static Int32 SetDebugMode(Int32 nOnOff)
+[OpticonScannerService]   static Int32 StartPolling(csp2CallBackFunction csp2CallBack)
+[OpticonScannerService]   static Int32 StartPollingAll(csp2CallBackFunctionAll csp2CallBack)
+[OpticonScannerService]   static Int32 StopPolling()
+[OpticonScannerService]   static Int32 EnablePolling()
+[OpticonScannerService]   static Int32 DisablePolling()
+[OpticonScannerService]   static Int32 GetOpnCompatiblePorts(Int32[] portArray)
+[OpticonScannerService] Init(9) returned: 0
+[OpticonScannerService] WakeUp() returned: 0
+[OpticonScannerService] Connected successfully to COM9
+[OpticonScannerService] GetScannerInfo entered
+[OpticonScannerService] GetDeviceId returned: 8, deviceId='0000000000420932'
+[OpticonScannerService] GetSwVersion returned: 9, version='RBBV0214'
+[OpticonScannerService] DataAvailable returned: 1
+[OpticonScannerService] GetSystemStatus returned: 0
+[OpticonScannerService] GetProtocol returned: 49
+[OpticonScannerService] ScannerInfo: Model='0000000000420932', FW='RBBV0214', Barcodes=1, Status=0, Protocol=49
+[OpticonScannerService] ReadAllBarcodes entered
+[OpticonScannerService] ReadData() returned: 4
+[OpticonScannerService] DataAvailable() returned: 1
+[OpticonScannerService] BarCodeDataPacket type: Opticon.csp2+BarCodeDataPacket, IsValueType=False
+[OpticonScannerService] GetPacket method: found
+[OpticonScannerService] GetPacket(1) returned: 23, packet is not null
+[OpticonScannerService] BarCodeDataPacket fields:
+[OpticonScannerService]   Int32 iId
+[OpticonScannerService]   String strId
+[OpticonScannerService]   String strBarData
+[OpticonScannerService]   DateTime dtTimestamp
+[OpticonScannerService] BarCodeDataPacket properties:
+[OpticonScannerService] Barcode[1]: data='1ND883453339NMD06', codeType='Code 39', timestamp=1/10/2025 1:52:06 AM
+[OpticonScannerService] ReadAllBarcodes returning 1 barcode(s)
