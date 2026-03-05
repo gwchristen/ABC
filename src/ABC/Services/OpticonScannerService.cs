@@ -13,7 +13,7 @@ public class OpticonScannerService : IScannerService
 {
     private bool _isConnected;
     private int _connectedPort;
-    private dynamic? _csp2;
+    private Type? _csp2Type;
 
     public bool IsConnected => _isConnected;
 
@@ -37,8 +37,8 @@ public class OpticonScannerService : IScannerService
             }
 
             // csp2GetOpnCompatiblePorts returns a comma-separated list of COM port numbers
-            dynamic csp2 = Activator.CreateInstance(csp2Type)!;
-            var portsResult = csp2.csp2GetOpnCompatiblePorts();
+            _csp2Type = csp2Type;
+            var portsResult = InvokeStatic("csp2GetOpnCompatiblePorts");
             System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] csp2GetOpnCompatiblePorts returned: {portsResult} (type: {portsResult?.GetType().Name ?? "null"})");
             var ports = new List<int>();
 
@@ -83,12 +83,13 @@ public class OpticonScannerService : IScannerService
             if (csp2Type is null)
                 return false;
 
-            _csp2 = Activator.CreateInstance(csp2Type)!;
-            int result = _csp2.csp2InitEx(comPort);
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] csp2InitEx(COM{comPort}) returned: {result}");
-            if (result == 0)
+            _csp2Type = csp2Type;
+            var result = InvokeStatic("csp2InitEx", comPort);
+            int initResult = result is int i ? i : -1;
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] csp2InitEx(COM{comPort}) returned: {initResult}");
+            if (initResult == 0)
             {
-                _csp2.csp2WakeUp();
+                InvokeStatic("csp2WakeUp");
                 _connectedPort = comPort;
                 _isConnected = true;
                 return true;
@@ -110,7 +111,7 @@ public class OpticonScannerService : IScannerService
         System.Diagnostics.Debug.WriteLine("[OpticonScannerService] Disconnect");
         try
         {
-            _csp2?.csp2Restore();
+            InvokeStatic("csp2Restore");
         }
         catch (Exception ex)
         {
@@ -122,26 +123,26 @@ public class OpticonScannerService : IScannerService
         finally
         {
             _isConnected = false;
-            _csp2 = null;
+            _csp2Type = null;
             _connectedPort = 0;
         }
     }
 
     public ScannerInfo GetScannerInfo()
     {
-        if (!_isConnected || _csp2 is null)
+        if (!_isConnected || _csp2Type is null)
             throw new InvalidOperationException("Scanner is not connected.");
 
         try
         {
             return new ScannerInfo
             {
-                Model = (string)_csp2.csp2GetModel(),
-                FirmwareVersion = (string)_csp2.csp2GetFirmwareVersion(),
-                SerialNumber = (string)_csp2.csp2GetSerialNumber(),
-                BatteryStatus = $"{(int)_csp2.csp2GetBatteryLevel()}%",
-                BarcodeCount = (int)_csp2.csp2GetDataCount(),
-                ProtocolVersion = (int)_csp2.csp2GetProtocolVersion(),
+                Model = InvokeStatic("csp2GetModel") as string ?? "Unknown",
+                FirmwareVersion = InvokeStatic("csp2GetFirmwareVersion") as string ?? "Unknown",
+                SerialNumber = InvokeStatic("csp2GetSerialNumber") as string ?? "Unknown",
+                BatteryStatus = InvokeStatic("csp2GetBatteryLevel") is int level ? $"{level}%" : "Unknown",
+                BarcodeCount = InvokeStatic("csp2GetDataCount") is int count ? count : 0,
+                ProtocolVersion = InvokeStatic("csp2GetProtocolVersion") is int ver ? ver : 0,
                 ComPort = _connectedPort
             };
         }
@@ -153,16 +154,16 @@ public class OpticonScannerService : IScannerService
 
     public List<BarcodeEntry> ReadAllBarcodes()
     {
-        if (!_isConnected || _csp2 is null)
+        if (!_isConnected || _csp2Type is null)
             throw new InvalidOperationException("Scanner is not connected.");
 
         try
         {
-            _csp2.csp2ReadData();
+            InvokeStatic("csp2ReadData");
             var barcodes = new List<BarcodeEntry>();
             int seq = 1;
-            string barcode;
-            while (!string.IsNullOrEmpty(barcode = (string)_csp2.csp2GetPacket()))
+            string? barcode;
+            while (!string.IsNullOrEmpty(barcode = InvokeStatic("csp2GetPacket") as string))
             {
                 barcodes.Add(new BarcodeEntry
                 {
@@ -183,19 +184,33 @@ public class OpticonScannerService : IScannerService
 
     public bool ClearScannerData()
     {
-        if (!_isConnected || _csp2 is null)
+        if (!_isConnected || _csp2Type is null)
             throw new InvalidOperationException("Scanner is not connected.");
 
         try
         {
-            int result = _csp2.csp2ClearData();
-            _csp2.csp2Restore();
+            var clearResult = InvokeStatic("csp2ClearData");
+            int result = clearResult is int r ? r : -1;
+            InvokeStatic("csp2Restore");
             return result == 0;
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException($"Failed to clear scanner data: {ex.Message}", ex);
         }
+    }
+
+    private object? InvokeStatic(string methodName, params object[] args)
+    {
+        var method = _csp2Type?.GetMethod(methodName);
+        if (method == null)
+        {
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Method '{methodName}' not found on type '{_csp2Type?.FullName}'");
+            return null;
+        }
+        var result = method.Invoke(null, args.Length > 0 ? args : Array.Empty<object>());
+        System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] {methodName} returned: {result} (type: {result?.GetType().Name ?? "null"})");
+        return result;
     }
 
     private Type? LoadCsp2Type()
@@ -213,16 +228,16 @@ public class OpticonScannerService : IScannerService
 
             System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: DLL found, loading assembly");
             var assembly = System.Reflection.Assembly.LoadFrom(dllPath);
-            var csp2Type = assembly.GetType("Opticon.Csp2");
+            var csp2Type = assembly.GetType("Opticon.csp2");
             if (csp2Type is null)
             {
                 var availableTypes = string.Join(", ", assembly.GetExportedTypes().Select(t => t.FullName));
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: type 'Opticon.Csp2' not found. Available: {availableTypes}");
-                LastError = $"Type 'Opticon.Csp2' not found in assembly. Available types: {availableTypes}";
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: type 'Opticon.csp2' not found. Available: {availableTypes}");
+                LastError = $"Type 'Opticon.csp2' not found in assembly. Available types: {availableTypes}";
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: type 'Opticon.Csp2' loaded successfully");
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: type 'Opticon.csp2' loaded successfully");
             }
             return csp2Type;
         }
