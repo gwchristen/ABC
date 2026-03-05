@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text;
 using ABC.Models;
 
 namespace ABC.Services;
@@ -19,6 +20,7 @@ public class OpticonScannerService : IScannerService
     private bool _isConnected;
     private int _connectedPort;
     private Type? _csp2Type;
+    private Type? _barCodeDataPacketType;
 
     public bool IsConnected => _isConnected;
 
@@ -41,31 +43,28 @@ public class OpticonScannerService : IScannerService
                 return new List<int>();
             }
 
-            // csp2GetOpnCompatiblePorts returns a comma-separated list of COM port numbers
             _csp2Type = csp2Type;
-            var portsResult = InvokeStatic("csp2GetOpnCompatiblePorts");
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] csp2GetOpnCompatiblePorts returned: {portsResult} (type: {portsResult?.GetType().Name ?? "null"})");
+
+            // GetOpnCompatiblePorts takes an Int32[] array and fills it with port numbers
+            // It returns the number of ports found (or error code)
+            int[] portArray = new int[256]; // generous buffer
+            var method = _csp2Type.GetMethod("GetOpnCompatiblePorts", new Type[] { typeof(int[]) });
+            var result = (int)(method?.Invoke(null, new object[] { portArray }) ?? -1);
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetOpnCompatiblePorts returned: {result}");
+
+            // result is the count of ports found; extract portArray[0..result-1]
+            // If result <= 0, no ports found
             var ports = new List<int>();
-
-            if (portsResult is null)
+            if (result > 0)
             {
-                LastError = "csp2GetOpnCompatiblePorts returned null. Ensure scanner is connected via USB and powered on.";
-                return ports;
+                for (int i = 0; i < result; i++)
+                    ports.Add(portArray[i]);
             }
-
-            string portsString = (string)portsResult;
-            if (string.IsNullOrWhiteSpace(portsString))
+            else
             {
-                LastError = "csp2GetOpnCompatiblePorts returned empty. No Opticon-compatible COM ports found. Check USB connection and drivers.";
-                return ports;
+                LastError = "GetOpnCompatiblePorts returned no ports. Ensure scanner is connected via USB and powered on.";
             }
-
-            foreach (var p in portsString.Split(','))
-            {
-                if (int.TryParse(p.Trim(), out int port))
-                    ports.Add(port);
-            }
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Parsed ports: [{string.Join(", ", ports)}]");
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Detected ports: {string.Join(", ", ports.Select(p => $"COM{p}"))}");
             return ports;
         }
         catch (Exception ex)
@@ -89,12 +88,16 @@ public class OpticonScannerService : IScannerService
                 return false;
 
             _csp2Type = csp2Type;
-            var result = InvokeStatic("csp2InitEx", comPort);
-            int initResult = result is int i ? i : -1;
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] csp2InitEx(COM{comPort}) returned: {initResult}");
+
+            // Init(int nComPort) - returns 0 on success
+            var initMethod = _csp2Type.GetMethod("Init", new Type[] { typeof(int) });
+            int initResult = (int)(initMethod?.Invoke(null, new object[] { comPort }) ?? -1);
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Init({comPort}) returned: {initResult}");
             if (initResult == 0)
             {
-                InvokeStatic("csp2WakeUp");
+                // WakeUp() - no-parameter overload
+                var wakeMethod = _csp2Type.GetMethod("WakeUp", Type.EmptyTypes);
+                wakeMethod?.Invoke(null, null);
                 _connectedPort = comPort;
                 _isConnected = true;
                 return true;
@@ -116,7 +119,9 @@ public class OpticonScannerService : IScannerService
         System.Diagnostics.Debug.WriteLine("[OpticonScannerService] Disconnect");
         try
         {
-            InvokeStatic("csp2Restore");
+            // Restore() - no-parameter overload
+            var restoreMethod = _csp2Type?.GetMethod("Restore", Type.EmptyTypes);
+            restoreMethod?.Invoke(null, null);
         }
         catch (Exception ex)
         {
@@ -129,6 +134,7 @@ public class OpticonScannerService : IScannerService
         {
             _isConnected = false;
             _csp2Type = null;
+            _barCodeDataPacketType = null;
             _connectedPort = 0;
         }
     }
@@ -140,14 +146,52 @@ public class OpticonScannerService : IScannerService
 
         try
         {
+            // GetDeviceId(String& DeviceId) - out parameter
+            string deviceId = "";
+            var getDeviceIdMethod = _csp2Type.GetMethod("GetDeviceId", new Type[] { typeof(string).MakeByRefType() });
+            if (getDeviceIdMethod != null)
+            {
+                object?[] args = new object?[] { null };
+                getDeviceIdMethod.Invoke(null, args);
+                deviceId = args[0] as string ?? "Unknown";
+            }
+
+            // GetSwVersion(StringBuilder szSwVersion, Int32 nMaxLength)
+            string swVersion = "Unknown";
+            var getSwVersionMethod = _csp2Type.GetMethod("GetSwVersion", new Type[] { typeof(StringBuilder), typeof(int) });
+            if (getSwVersionMethod != null)
+            {
+                var sb = new StringBuilder(256);
+                getSwVersionMethod.Invoke(null, new object[] { sb, 256 });
+                swVersion = sb.ToString();
+            }
+
+            // DataAvailable() - returns barcode count
+            int barcodeCount = 0;
+            var dataAvailMethod = _csp2Type.GetMethod("DataAvailable", Type.EmptyTypes);
+            if (dataAvailMethod != null)
+                barcodeCount = (int)dataAvailMethod.Invoke(null, null)!;
+
+            // GetSystemStatus() - returns battery/system info
+            int systemStatus = 0;
+            var sysStatusMethod = _csp2Type.GetMethod("GetSystemStatus", Type.EmptyTypes);
+            if (sysStatusMethod != null)
+                systemStatus = (int)sysStatusMethod.Invoke(null, null)!;
+
+            // GetProtocol()
+            int protocol = 0;
+            var protoMethod = _csp2Type.GetMethod("GetProtocol", Type.EmptyTypes);
+            if (protoMethod != null)
+                protocol = (int)protoMethod.Invoke(null, null)!;
+
             return new ScannerInfo
             {
-                Model = InvokeStatic("csp2GetModel") as string ?? "Unknown",
-                FirmwareVersion = InvokeStatic("csp2GetFirmwareVersion") as string ?? "Unknown",
-                SerialNumber = InvokeStatic("csp2GetSerialNumber") as string ?? "Unknown",
-                BatteryStatus = InvokeStatic("csp2GetBatteryLevel") is int level ? $"{level}%" : "Unknown",
-                BarcodeCount = InvokeStatic("csp2GetDataCount") is int count ? count : 0,
-                ProtocolVersion = InvokeStatic("csp2GetProtocolVersion") is int ver ? ver : 0,
+                Model = deviceId,
+                FirmwareVersion = swVersion,
+                SerialNumber = deviceId, // DeviceId often contains serial
+                BatteryStatus = $"Status: {systemStatus}",
+                BarcodeCount = barcodeCount,
+                ProtocolVersion = protocol,
                 ComPort = _connectedPort
             };
         }
@@ -164,20 +208,104 @@ public class OpticonScannerService : IScannerService
 
         try
         {
-            InvokeStatic("csp2ReadData");
+            // ReadData() first
+            var readDataMethod = _csp2Type.GetMethod("ReadData", Type.EmptyTypes);
+            readDataMethod?.Invoke(null, null);
+
+            // DataAvailable() to get count
+            var dataAvailMethod = _csp2Type.GetMethod("DataAvailable", Type.EmptyTypes);
+            int count = dataAvailMethod != null ? (int)dataAvailMethod.Invoke(null, null)! : 0;
+
+            // Get the BarCodeDataPacket type
+            var packetType = _barCodeDataPacketType
+                ?? _csp2Type.Assembly.GetType("Opticon.csp2+BarCodeDataPacket");
+            _barCodeDataPacketType = packetType;
+
+            // GetPacket(BarCodeDataPacket& aPacket, Int32 nBarcodeNumber) for each barcode
+            var getPacketMethod = packetType != null
+                ? _csp2Type.GetMethod("GetPacket", new Type[] { packetType.MakeByRefType(), typeof(int) })
+                : null;
+
             var barcodes = new List<BarcodeEntry>();
-            int seq = 1;
-            string? barcode;
-            while (!string.IsNullOrEmpty(barcode = InvokeStatic("csp2GetPacket") as string))
+
+            // Get the device ID for barcode ScannerId tagging
+            string deviceId = "";
+            var getDeviceIdMethod = _csp2Type.GetMethod("GetDeviceId", new Type[] { typeof(string).MakeByRefType() });
+            if (getDeviceIdMethod != null)
             {
-                barcodes.Add(new BarcodeEntry
+                object?[] idArgs = new object?[] { null };
+                getDeviceIdMethod.Invoke(null, idArgs);
+                deviceId = idArgs[0] as string ?? "";
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                if (getPacketMethod == null || packetType == null)
+                    break;
+
+                object?[] args = new object?[] { packetType.IsValueType ? Activator.CreateInstance(packetType) : null, i };
+                int result = (int)(getPacketMethod.Invoke(null, args) ?? -1);
+                if (result == 0 && args[0] != null)
                 {
-                    Barcode = barcode,
-                    Timestamp = DateTime.Now,
-                    CodeType = string.Empty,
-                    ScannerId = string.Empty,
-                    SequenceNumber = seq++
-                });
+                    string barcodeData = "";
+                    string codeType = "";
+                    DateTime timestamp = DateTime.Now;
+
+                    // Log all fields on first iteration for debugging
+                    if (i == 0)
+                    {
+                        var allFields = packetType.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] BarCodeDataPacket fields:");
+                        foreach (var f in allFields)
+                            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   {f.FieldType.Name} {f.Name}");
+
+                        var allProps = packetType.GetProperties();
+                        System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] BarCodeDataPacket properties:");
+                        foreach (var p in allProps)
+                            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   {p.PropertyType.Name} {p.Name}");
+                    }
+
+                    try
+                    {
+                        var barcodeField = packetType.GetField("BarData") ?? packetType.GetField("barData") ?? packetType.GetField("Data");
+                        var codeTypeField = packetType.GetField("CodeId") ?? packetType.GetField("codeId") ?? packetType.GetField("CodeType");
+                        var timeField = packetType.GetField("TimeStamp") ?? packetType.GetField("timeStamp");
+
+                        if (barcodeField != null)
+                        {
+                            var val = barcodeField.GetValue(args[0]);
+                            barcodeData = val?.ToString() ?? "";
+                        }
+
+                        if (codeTypeField != null)
+                        {
+                            var val = codeTypeField.GetValue(args[0]);
+                            codeType = val?.ToString() ?? "";
+                        }
+
+                        if (timeField != null)
+                        {
+                            var val = timeField.GetValue(args[0]);
+                            if (val is DateTime dt)
+                                timestamp = dt;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Error reading packet fields: {ex.Message}");
+                        // Fallback: try ToString
+                        barcodeData = args[0]?.ToString() ?? $"Barcode_{i + 1}";
+                    }
+
+                    barcodes.Add(new BarcodeEntry
+                    {
+                        Barcode = barcodeData,
+                        Timestamp = timestamp,
+                        CodeType = codeType,
+                        ScannerId = deviceId ?? "",
+                        SequenceNumber = i + 1
+                    });
+                }
             }
             return barcodes;
         }
@@ -194,9 +322,12 @@ public class OpticonScannerService : IScannerService
 
         try
         {
-            var clearResult = InvokeStatic("csp2ClearData");
-            int result = clearResult is int r ? r : -1;
-            InvokeStatic("csp2Restore");
+            // ClearData() - returns 0 on success
+            var clearMethod = _csp2Type.GetMethod("ClearData", Type.EmptyTypes);
+            int result = clearMethod != null ? (int)(clearMethod.Invoke(null, null) ?? -1) : -1;
+            // Also call Restore()
+            var restoreMethod = _csp2Type.GetMethod("Restore", Type.EmptyTypes);
+            restoreMethod?.Invoke(null, null);
             return result == 0;
         }
         catch (Exception ex)
