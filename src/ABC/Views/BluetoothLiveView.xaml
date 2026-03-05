@@ -7,7 +7,7 @@
              xmlns:vm="clr-namespace:ABC.ViewModels"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:BluetoothLiveViewModel}"
-             Background="{StaticResource WindowBackground}">
+             Background="{DynamicResource WindowBackground}">
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
@@ -263,7 +263,7 @@
 
         <!-- Splitter -->
         <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"
-                      Background="{StaticResource BorderBrush}" />
+                      Background="{DynamicResource BorderBrush}" />
 
         <!-- ===== Right Panel: Live Scan View ===== -->
         <Grid Grid.Column="2">
@@ -277,10 +277,20 @@
                            Style="{StaticResource SectionHeader}"
                            VerticalAlignment="Center"
                            Margin="0,0,12,0" />
+                <TextBlock Text="{Binding BarcodeCount, StringFormat='{}{0} barcode(s)'}"
+                           Style="{StaticResource InfoLabel}"
+                           VerticalAlignment="Center" />
+                <TextBlock Text="{Binding DuplicateCount, StringFormat='{}{0} duplicate(s)'}"
+                           Foreground="{DynamicResource WarningBrush}"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="8,0,0,0"
+                           Visibility="{Binding HasDuplicates, Converter={StaticResource BoolToVisibility}}" />
                 <Button Content="Clear"
                         Style="{StaticResource SecondaryButton}"
                         Command="{Binding ClearDisplayCommand}"
-                        Padding="8,4" FontSize="12" />
+                        Padding="8,4" FontSize="12"
+                        Margin="8,0,0,0" />
             </StackPanel>
 
             <Border Grid.Row="1" Style="{StaticResource CardBorder}" Margin="0">

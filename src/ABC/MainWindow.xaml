@@ -9,7 +9,7 @@
         Height="700" Width="1000"
         MinHeight="600" MinWidth="800"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource WindowBackground}">
+        Background="{DynamicResource WindowBackground}">
 
     <Window.Resources>
         <Style TargetType="TabControl" BasedOn="{StaticResource ModernTabControl}" />
@@ -21,26 +21,46 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Main Tab Control -->
-        <TabControl Grid.Row="0" Margin="8,8,8,4">
-            <TabItem Header="USB Download">
-                <views:UsbDownloadView DataContext="{Binding UsbDownload}" />
-            </TabItem>
-            <TabItem Header="Bluetooth Live Scan">
-                <views:BluetoothLiveView DataContext="{Binding BluetoothLive}" />
-            </TabItem>
-        </TabControl>
+        <!-- Main content area with tab control and theme toggle -->
+        <Grid Grid.Row="0">
+            <TabControl Margin="8,8,8,4">
+                <TabItem Header="USB Download">
+                    <views:UsbDownloadView DataContext="{Binding UsbDownload}" />
+                </TabItem>
+                <TabItem Header="Bluetooth Live Scan">
+                    <views:BluetoothLiveView DataContext="{Binding BluetoothLive}" />
+                </TabItem>
+            </TabControl>
+
+            <!-- Theme toggle button overlaid at top-right of the tab strip -->
+            <Button Command="{Binding ToggleThemeCommand}"
+                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Margin="0,10,12,0"
+                    Padding="8,4" FontSize="16"
+                    ToolTip="Toggle dark/light theme">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+                        <Setter Property="Content" Value="🌙" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsDarkTheme}" Value="True">
+                                <Setter Property="Content" Value="☀" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Grid>
 
         <!-- Status Bar -->
-        <StatusBar Grid.Row="1" Background="{StaticResource StatusBarBackground}">
+        <StatusBar Grid.Row="1" Background="{DynamicResource StatusBarBackground}">
             <StatusBarItem>
-                <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource StatusBarForeground}" />
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource StatusBarForeground}" />
             </StatusBarItem>
             <Separator />
             <StatusBarItem HorizontalAlignment="Right">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Barcodes: " Foreground="{StaticResource StatusBarForeground}" />
-                    <TextBlock Text="{Binding TotalBarcodeCount}" Foreground="{StaticResource StatusBarForeground}" />
+                    <TextBlock Text="Barcodes: " Foreground="{DynamicResource StatusBarForeground}" />
+                    <TextBlock Text="{Binding TotalBarcodeCount}" Foreground="{DynamicResource StatusBarForeground}" />
                 </StackPanel>
             </StatusBarItem>
         </StatusBar>

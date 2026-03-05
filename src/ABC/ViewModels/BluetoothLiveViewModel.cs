@@ -15,6 +15,7 @@ public class BluetoothLiveViewModel : ViewModelBase
     private ObservableCollection<string> _availablePorts = new();
     private string? _selectedPort;
     private ObservableCollection<BarcodeEntry> _barcodes = new();
+    private readonly Dictionary<string, int> _barcodeCounts = new();
     private string _liveText = string.Empty;
     private string _saveDirectory = string.Empty;
     private string _fileName = GenerateDefaultFileName();
@@ -46,6 +47,10 @@ public class BluetoothLiveViewModel : ViewModelBase
     }
 
     public int BarcodeCount => _barcodes.Count;
+
+    public int DuplicateCount => _barcodes.Count(b => b.IsDuplicate);
+
+    public bool HasDuplicates => DuplicateCount > 0;
 
     public string LiveText
     {
@@ -237,8 +242,11 @@ public class BluetoothLiveViewModel : ViewModelBase
     private void ClearDisplay()
     {
         _barcodes.Clear();
+        _barcodeCounts.Clear();
         LiveText = string.Empty;
         BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
+        OnPropertyChanged(nameof(DuplicateCount));
+        OnPropertyChanged(nameof(HasDuplicates));
     }
 
     private void OnBarcodeReceived(object? sender, BarcodeEntry entry)
@@ -246,14 +254,34 @@ public class BluetoothLiveViewModel : ViewModelBase
         Application.Current.Dispatcher.BeginInvoke(() =>
         {
             entry.SequenceNumber = _barcodes.Count + 1;
+
+            _barcodeCounts.TryGetValue(entry.Barcode, out int count);
+            _barcodeCounts[entry.Barcode] = count + 1;
+
+            bool isDuplicate = count > 0;
+            if (isDuplicate)
+            {
+                entry.IsDuplicate = true;
+                if (count == 1)
+                {
+                    // Mark the first occurrence as a duplicate too
+                    var first = _barcodes.FirstOrDefault(b => b.Barcode == entry.Barcode);
+                    if (first != null)
+                        first.IsDuplicate = true;
+                }
+            }
+
             _barcodes.Add(entry);
 
+            string prefix = isDuplicate ? "[DUP] " : string.Empty;
             string line = ShowTimestamps
-                ? $"[{entry.Timestamp:HH:mm:ss}] {entry.Barcode}"
-                : entry.Barcode;
+                ? $"[{entry.Timestamp:HH:mm:ss}] {prefix}{entry.Barcode}"
+                : $"{prefix}{entry.Barcode}";
 
             LiveText += line + Environment.NewLine;
             BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
+            OnPropertyChanged(nameof(DuplicateCount));
+            OnPropertyChanged(nameof(HasDuplicates));
             StatusChanged?.Invoke(this, $"Received barcode: {entry.Barcode} ({_barcodes.Count} total)");
         });
     }

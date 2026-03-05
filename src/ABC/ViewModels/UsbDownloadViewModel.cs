@@ -52,6 +52,10 @@ public class UsbDownloadViewModel : ViewModelBase
 
     public int BarcodeCount => _barcodes.Count;
 
+    public int DuplicateCount => _barcodes.Count(b => b.IsDuplicate);
+
+    public bool HasDuplicates => DuplicateCount > 0;
+
     public string SaveDirectory
     {
         get => _saveDirectory;
@@ -187,11 +191,23 @@ public class UsbDownloadViewModel : ViewModelBase
             StatusChanged?.Invoke(this, $"Reading barcodes from {ScannerInfo.Model}...");
 
             var barcodes = await Task.Run(() => _scannerService.ReadAllBarcodes());
+
+            var duplicateValues = barcodes
+                .GroupBy(b => b.Barcode)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToHashSet();
+
+            foreach (var b in barcodes)
+                b.IsDuplicate = duplicateValues.Contains(b.Barcode);
+
             Barcodes.Clear();
             foreach (var b in barcodes)
                 Barcodes.Add(b);
 
             BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
+            OnPropertyChanged(nameof(DuplicateCount));
+            OnPropertyChanged(nameof(HasDuplicates));
             StatusChanged?.Invoke(this, $"Downloaded {barcodes.Count} barcode(s) from {ScannerInfo.Model}.");
         }
         catch (Exception ex)
@@ -224,6 +240,8 @@ public class UsbDownloadViewModel : ViewModelBase
             {
                 Barcodes.Clear();
                 BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
+                OnPropertyChanged(nameof(DuplicateCount));
+                OnPropertyChanged(nameof(HasDuplicates));
                 StatusChanged?.Invoke(this, "Scanner data cleared successfully.");
             }
             else
