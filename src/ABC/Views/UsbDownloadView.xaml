@@ -7,7 +7,7 @@
              xmlns:vm="clr-namespace:ABC.ViewModels"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:UsbDownloadViewModel}"
-             Background="{StaticResource WindowBackground}">
+             Background="{DynamicResource WindowBackground}">
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
@@ -161,7 +161,7 @@
 
         <!-- Splitter -->
         <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"
-                      Background="{StaticResource BorderBrush}" />
+                      Background="{DynamicResource BorderBrush}" />
 
         <!-- ===== Right Panel: Barcode Preview ===== -->
         <Grid Grid.Column="2">
@@ -178,6 +178,12 @@
                 <TextBlock Text="{Binding Barcodes.Count, StringFormat='{}{0} barcode(s)'}"
                            Style="{StaticResource InfoLabel}"
                            VerticalAlignment="Center" />
+                <TextBlock Text="{Binding DuplicateCount, StringFormat='{}{0} duplicate(s)'}"
+                           Foreground="{DynamicResource WarningBrush}"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="8,0,0,0"
+                           Visibility="{Binding HasDuplicates, Converter={StaticResource BoolToVisibility}}" />
 
                 <!-- Busy indicator -->
                 <ProgressBar IsIndeterminate="True" Width="120" Height="4"
@@ -187,7 +193,8 @@
 
             <Border Grid.Row="1" Style="{StaticResource CardBorder}" Margin="0">
                 <DataGrid Style="{StaticResource ModernDataGrid}"
-                          ItemsSource="{Binding Barcodes}">
+                          ItemsSource="{Binding Barcodes}"
+                          RowStyle="{StaticResource DuplicateRowStyle}">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="#" Binding="{Binding SequenceNumber}" Width="50" />
                         <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="*" />

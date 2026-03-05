@@ -1,3 +1,6 @@
+using System.Windows.Input;
+using ABC.Services;
+
 namespace ABC.ViewModels;
 
 public class MainViewModel : ViewModelBase
@@ -20,6 +23,10 @@ public class MainViewModel : ViewModelBase
         private set => SetProperty(ref _totalBarcodeCount, value);
     }
 
+    public bool IsDarkTheme => ThemeService.Instance.IsDarkTheme;
+
+    public ICommand ToggleThemeCommand { get; }
+
     public MainViewModel()
     {
         UsbDownload = new UsbDownloadViewModel();
@@ -30,6 +37,12 @@ public class MainViewModel : ViewModelBase
 
         UsbDownload.BarcodeCountChanged += OnBarcodeCountChanged;
         BluetoothLive.BarcodeCountChanged += OnBarcodeCountChanged;
+
+        ToggleThemeCommand = new RelayCommand(_ =>
+        {
+            ThemeService.Instance.ToggleTheme();
+            OnPropertyChanged(nameof(IsDarkTheme));
+        });
     }
 
     private void OnChildStatusChanged(object? sender, string message)
