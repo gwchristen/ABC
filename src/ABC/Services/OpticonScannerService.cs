@@ -236,29 +236,37 @@ public class OpticonScannerService : IScannerService
 
         try
         {
-            // ReadData() first - this transfers data from scanner to PC buffer
+            // ReadData() first - this transfers data from scanner to PC buffer and returns the count
             var readDataMethod = _csp2Type.GetMethod("ReadData", Type.EmptyTypes);
+            int count = 0;
             if (readDataMethod != null)
             {
                 var readResult = readDataMethod.Invoke(null, null);
                 System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] ReadData() returned: {readResult}");
+                if (readResult is int readCount && readCount > 0)
+                {
+                    count = readCount;
+                }
             }
             else
             {
                 System.Diagnostics.Debug.WriteLine("[OpticonScannerService] ReadData method not found!");
             }
 
-            // DataAvailable() to get count
-            var dataAvailMethod = _csp2Type.GetMethod("DataAvailable", Type.EmptyTypes);
-            int count = 0;
-            if (dataAvailMethod != null)
+            // Fall back to DataAvailable() if ReadData() returned 0 or a negative value
+            if (count <= 0)
             {
-                count = (int)dataAvailMethod.Invoke(null, null)!;
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] DataAvailable() returned: {count}");
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine("[OpticonScannerService] DataAvailable method not found!");
+                var dataAvailMethod = _csp2Type.GetMethod("DataAvailable", Type.EmptyTypes);
+                if (dataAvailMethod != null)
+                {
+                    var dataAvailResult = (int)dataAvailMethod.Invoke(null, null)!;
+                    System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] DataAvailable() returned: {dataAvailResult} (fallback)");
+                    count = dataAvailResult;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("[OpticonScannerService] DataAvailable method not found!");
+                }
             }
 
             if (count <= 0)
