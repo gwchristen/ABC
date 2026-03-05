@@ -30,7 +30,7 @@
                     <TextBlock Text="Connection Type" Style="{StaticResource SectionHeader}" />
                     <StackPanel Orientation="Horizontal">
                         <RadioButton Content="SPP (COM Port)"
-                                     IsChecked="{Binding IsSppMode}"
+                                     IsChecked="{Binding IsSppMode, Mode=OneWay}"
                                      IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBool}}"
                                      Margin="0,0,16,0"
                                      VerticalAlignment="Center" />
