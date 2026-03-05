@@ -1,9 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
-using System.IO.Ports;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Threading;
 using ABC.Models;
 using ABC.Services;
 
@@ -23,6 +21,10 @@ public class BluetoothLiveViewModel : ViewModelBase
     private bool _saveAsCsv;
     private bool _isConnected;
     private bool _showTimestamps = true;
+    private bool _isBleMode;
+    private bool _isScanningBle;
+    private ObservableCollection<BleDeviceInfo> _bleDevices = new();
+    private BleDeviceInfo? _selectedBleDevice;
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler? BarcodeCountChanged;
@@ -36,7 +38,11 @@ public class BluetoothLiveViewModel : ViewModelBase
     public string? SelectedPort
     {
         get => _selectedPort;
-        set => SetProperty(ref _selectedPort, value);
+        set
+        {
+            SetProperty(ref _selectedPort, value);
+            CommandManager.InvalidateRequerySuggested();
+        }
     }
 
     public int BarcodeCount => _barcodes.Count;
@@ -81,12 +87,49 @@ public class BluetoothLiveViewModel : ViewModelBase
         set => SetProperty(ref _showTimestamps, value);
     }
 
+    public bool IsBleMode
+    {
+        get => _isBleMode;
+        set
+        {
+            SetProperty(ref _isBleMode, value);
+            OnPropertyChanged(nameof(IsSppMode));
+            CommandManager.InvalidateRequerySuggested();
+        }
+    }
+
+    public bool IsSppMode => !_isBleMode;
+
+    public bool IsScanningBle
+    {
+        get => _isScanningBle;
+        private set
+        {
+            SetProperty(ref _isScanningBle, value);
+            CommandManager.InvalidateRequerySuggested();
+        }
+    }
+
+    public ObservableCollection<BleDeviceInfo> BleDevices => _bleDevices;
+
+    public BleDeviceInfo? SelectedBleDevice
+    {
+        get => _selectedBleDevice;
+        set
+        {
+            SetProperty(ref _selectedBleDevice, value);
+            CommandManager.InvalidateRequerySuggested();
+        }
+    }
+
     public ICommand RefreshPortsCommand { get; }
     public ICommand ConnectCommand { get; }
     public ICommand DisconnectCommand { get; }
     public ICommand ClearDisplayCommand { get; }
     public ICommand BrowseDirectoryCommand { get; }
     public ICommand SaveCommand { get; }
+    public ICommand ScanBleCommand { get; }
+    public ICommand ConnectBleCommand { get; }
 
     public BluetoothLiveViewModel() : this(new BluetoothScanService(), new FileExportService()) { }
 
@@ -95,6 +138,8 @@ public class BluetoothLiveViewModel : ViewModelBase
         _bluetoothService = bluetoothService;
         _fileExportService = fileExportService;
         _bluetoothService.BarcodeReceived += OnBarcodeReceived;
+        _bluetoothService.BleDeviceDiscovered += OnBleDeviceDiscovered;
+        _bluetoothService.Disconnected += OnServiceDisconnected;
 
         _saveDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
@@ -104,6 +149,8 @@ public class BluetoothLiveViewModel : ViewModelBase
         ClearDisplayCommand = new RelayCommand(_ => ClearDisplay());
         BrowseDirectoryCommand = new RelayCommand(_ => BrowseDirectory());
         SaveCommand = new RelayCommand(async _ => await SaveAsync(), _ => _barcodes.Count > 0);
+        ScanBleCommand = new RelayCommand(async _ => await ToggleBleDiscoveryAsync(), _ => !IsConnected);
+        ConnectBleCommand = new RelayCommand(async _ => await ConnectBleAsync(), _ => !IsConnected && SelectedBleDevice != null);
 
         RefreshPorts();
     }
@@ -138,10 +185,52 @@ public class BluetoothLiveViewModel : ViewModelBase
         }
     }
 
+    private async Task ConnectBleAsync()
+    {
+        if (SelectedBleDevice is null)
+        {
+            StatusChanged?.Invoke(this, "No BLE device selected.");
+            return;
+        }
+
+        StatusChanged?.Invoke(this, $"Connecting to {SelectedBleDevice.DisplayName}...");
+        bool connected = await _bluetoothService.ConnectBleAsync(SelectedBleDevice.BluetoothAddress);
+        if (connected)
+        {
+            IsConnected = true;
+            _bluetoothService.StopBleDiscovery();
+            IsScanningBle = false;
+            StatusChanged?.Invoke(this, $"Connected to {SelectedBleDevice.DisplayName}. Waiting for scans...");
+        }
+        else
+        {
+            StatusChanged?.Invoke(this, $"Failed to connect to {SelectedBleDevice.DisplayName}.");
+        }
+    }
+
+    private async Task ToggleBleDiscoveryAsync()
+    {
+        if (IsScanningBle)
+        {
+            _bluetoothService.StopBleDiscovery();
+            IsScanningBle = false;
+            StatusChanged?.Invoke(this, "BLE scan stopped.");
+        }
+        else
+        {
+            _bleDevices.Clear();
+            SelectedBleDevice = null;
+            await _bluetoothService.StartBleDiscoveryAsync();
+            IsScanningBle = true;
+            StatusChanged?.Invoke(this, "Scanning for BLE devices...");
+        }
+    }
+
     private void Disconnect()
     {
         _bluetoothService.Disconnect();
         IsConnected = false;
+        IsScanningBle = false;
         StatusChanged?.Invoke(this, "Disconnected from Bluetooth scanner.");
     }
 
@@ -166,6 +255,28 @@ public class BluetoothLiveViewModel : ViewModelBase
             LiveText += line + Environment.NewLine;
             BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
             StatusChanged?.Invoke(this, $"Received barcode: {entry.Barcode} ({_barcodes.Count} total)");
+        });
+    }
+
+    private void OnBleDeviceDiscovered(object? sender, BleDeviceInfo deviceInfo)
+    {
+        Application.Current.Dispatcher.BeginInvoke(() =>
+        {
+            // De-duplicate by Bluetooth address
+            if (_bleDevices.All(d => d.BluetoothAddress != deviceInfo.BluetoothAddress))
+            {
+                _bleDevices.Add(deviceInfo);
+                StatusChanged?.Invoke(this, $"Found BLE device: {deviceInfo.DisplayName}");
+            }
+        });
+    }
+
+    private void OnServiceDisconnected(object? sender, EventArgs e)
+    {
+        Application.Current.Dispatcher.BeginInvoke(() =>
+        {
+            IsConnected = false;
+            StatusChanged?.Invoke(this, "BLE device disconnected.");
         });
     }
 
@@ -224,3 +335,4 @@ public class BluetoothLiveViewModel : ViewModelBase
     private static string GenerateDefaultFileName()
         => $"scan_{DateTime.Now:yyyyMMdd_HHmmss}";
 }
+

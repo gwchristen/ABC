@@ -24,10 +24,29 @@
         <!-- ===== Left Panel: Bluetooth Settings ===== -->
         <StackPanel Grid.Column="0">
 
-            <!-- Connection Card -->
+            <!-- Connection Type Card -->
             <Border Style="{StaticResource CardBorder}">
                 <StackPanel>
-                    <TextBlock Text="Bluetooth Connection" Style="{StaticResource SectionHeader}" />
+                    <TextBlock Text="Connection Type" Style="{StaticResource SectionHeader}" />
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Content="SPP (COM Port)"
+                                     IsChecked="{Binding IsSppMode}"
+                                     IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBool}}"
+                                     Margin="0,0,16,0"
+                                     VerticalAlignment="Center" />
+                        <RadioButton Content="BLE"
+                                     IsChecked="{Binding IsBleMode}"
+                                     IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBool}}"
+                                     VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- SPP Connection Card -->
+            <Border Style="{StaticResource CardBorder}"
+                    Visibility="{Binding IsSppMode, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="SPP Connection" Style="{StaticResource SectionHeader}" />
 
                     <!-- Connection status -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
@@ -84,6 +103,84 @@
                     <Button Content="Connect"
                             Style="{StaticResource AccentButton}"
                             Command="{Binding ConnectCommand}"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,0,0,4"
+                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+
+                    <Button Content="Disconnect"
+                            Style="{StaticResource DangerButton}"
+                            Command="{Binding DisconnectCommand}"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,0,0,4"
+                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}}" />
+
+                    <!-- Scan Count -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Scan Count:" Style="{StaticResource InfoLabel}" />
+                        <TextBlock Grid.Column="2" Text="{Binding BarcodeCount}" Style="{StaticResource InfoValue}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- BLE Connection Card -->
+            <Border Style="{StaticResource CardBorder}"
+                    Visibility="{Binding IsBleMode, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="BLE Connection" Style="{StaticResource SectionHeader}" />
+
+                    <!-- Connection status -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <Ellipse Style="{StaticResource StatusDot}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="12">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Disconnected" />
+                                    <Setter Property="Foreground" Value="#CC0000" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                            <Setter Property="Text" Value="Connected" />
+                                            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- Scan button -->
+                    <Button HorizontalAlignment="Stretch"
+                            Margin="0,0,0,8"
+                            Command="{Binding ScanBleCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+                                <Setter Property="Content" Value="Scan for Devices" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsScanningBle}" Value="True">
+                                        <Setter Property="Content" Value="Stop Scanning" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <!-- BLE device list -->
+                    <TextBlock Text="Discovered Devices:" Style="{StaticResource InfoLabel}" Margin="0,0,0,4" />
+                    <ComboBox Style="{StaticResource ModernComboBox}"
+                              ItemsSource="{Binding BleDevices}"
+                              SelectedItem="{Binding SelectedBleDevice}"
+                              DisplayMemberPath="DisplayName"
+                              IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBool}}"
+                              Margin="0,0,0,8" />
+
+                    <!-- Connect / Disconnect buttons -->
+                    <Button Content="Connect"
+                            Style="{StaticResource AccentButton}"
+                            Command="{Binding ConnectBleCommand}"
                             HorizontalAlignment="Stretch"
                             Margin="0,0,0,4"
                             Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
