@@ -25,6 +25,7 @@ public class OpticonScannerService : IScannerService
 
     public List<int> DetectScanners()
     {
+        System.Diagnostics.Debug.WriteLine("[OpticonScannerService] DetectScanners entered");
         LastError = null;
         try
         {
@@ -38,6 +39,7 @@ public class OpticonScannerService : IScannerService
             // csp2GetOpnCompatiblePorts returns a comma-separated list of COM port numbers
             dynamic csp2 = Activator.CreateInstance(csp2Type)!;
             var portsResult = csp2.csp2GetOpnCompatiblePorts();
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] csp2GetOpnCompatiblePorts returned: {portsResult} (type: {portsResult?.GetType().Name ?? "null"})");
             var ports = new List<int>();
 
             if (portsResult is null)
@@ -58,10 +60,15 @@ public class OpticonScannerService : IScannerService
                 if (int.TryParse(p.Trim(), out int port))
                     ports.Add(port);
             }
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Parsed ports: [{string.Join(", ", ports)}]");
             return ports;
         }
         catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] DetectScanners failed: {ex.GetType().Name}: {ex.Message}");
+            if (ex.InnerException != null)
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
             LastError = $"DetectScanners exception: {ex.GetType().Name}: {ex.Message}";
             return new List<int>();
         }
@@ -69,6 +76,7 @@ public class OpticonScannerService : IScannerService
 
     public bool Connect(int comPort)
     {
+        System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Connect to COM{comPort}");
         try
         {
             var csp2Type = LoadCsp2Type();
@@ -77,6 +85,7 @@ public class OpticonScannerService : IScannerService
 
             _csp2 = Activator.CreateInstance(csp2Type)!;
             int result = _csp2.csp2InitEx(comPort);
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] csp2InitEx(COM{comPort}) returned: {result}");
             if (result == 0)
             {
                 _csp2.csp2WakeUp();
@@ -86,19 +95,30 @@ public class OpticonScannerService : IScannerService
             }
             return false;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Connect failed: {ex.GetType().Name}: {ex.Message}");
+            if (ex.InnerException != null)
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
             return false;
         }
     }
 
     public void Disconnect()
     {
+        System.Diagnostics.Debug.WriteLine("[OpticonScannerService] Disconnect");
         try
         {
             _csp2?.csp2Restore();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Disconnect failed: {ex.GetType().Name}: {ex.Message}");
+            if (ex.InnerException != null)
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
+        }
         finally
         {
             _isConnected = false;
@@ -183,23 +203,35 @@ public class OpticonScannerService : IScannerService
         try
         {
             string dllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Opticon.csp2.net.dll");
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: trying DLL path: {dllPath}");
             if (!File.Exists(dllPath))
             {
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: DLL not found at {dllPath}");
                 LastError = $"Opticon DLL not found at: {dllPath}";
                 return null;
             }
 
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: DLL found, loading assembly");
             var assembly = System.Reflection.Assembly.LoadFrom(dllPath);
             var csp2Type = assembly.GetType("Opticon.Csp2");
             if (csp2Type is null)
             {
                 var availableTypes = string.Join(", ", assembly.GetExportedTypes().Select(t => t.FullName));
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: type 'Opticon.Csp2' not found. Available: {availableTypes}");
                 LastError = $"Type 'Opticon.Csp2' not found in assembly. Available types: {availableTypes}";
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: type 'Opticon.Csp2' loaded successfully");
             }
             return csp2Type;
         }
         catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type failed: {ex.GetType().Name}: {ex.Message}");
+            if (ex.InnerException != null)
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
             LastError = $"LoadCsp2Type failed: {ex.GetType().Name}: {ex.Message}";
             if (ex.InnerException != null)
                 LastError += $" Inner: {ex.InnerException.Message}";

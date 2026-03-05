@@ -122,7 +122,9 @@ public class UsbDownloadViewModel : ViewModelBase
     {
         // Use the real service if the Opticon DLL is present, otherwise fall back to mock
         string dllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Opticon.csp2.net.dll");
-        if (File.Exists(dllPath))
+        bool useOpticon = File.Exists(dllPath);
+        System.Diagnostics.Debug.WriteLine($"[UsbDownloadViewModel] Using {(useOpticon ? "OpticonScannerService" : "MockScannerService")}");
+        if (useOpticon)
             return new OpticonScannerService();
         return new MockScannerService();
     }
@@ -145,7 +147,10 @@ public class UsbDownloadViewModel : ViewModelBase
             }
             else
             {
-                StatusChanged?.Invoke(this, "No scanners detected.");
+                string detail = (_scannerService is OpticonScannerService opticon && opticon.LastError != null)
+                    ? $"No scanners detected. Detail: {opticon.LastError}"
+                    : "No scanners detected.";
+                StatusChanged?.Invoke(this, detail);
             }
         }
         catch (Exception ex)
