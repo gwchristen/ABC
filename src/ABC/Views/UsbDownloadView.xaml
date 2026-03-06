@@ -213,16 +213,21 @@
                            VerticalAlignment="Center"
                            Margin="8,0,0,0"
                            Visibility="{Binding HasDuplicates, Converter={StaticResource BoolToVisibility}}" />
+                <TextBlock Text="{Binding SelectedCount, StringFormat='{}{0} selected'}"
+                           Foreground="{DynamicResource AccentBrush}"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="8,0,0,0"
+                           Visibility="{Binding HasSelected, Converter={StaticResource BoolToVisibility}}" />
 
                 <!-- Busy indicator -->
                 <ProgressBar IsIndeterminate="True" Width="120" Height="4"
                              Margin="12,0,0,0" VerticalAlignment="Center"
                              Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
 
-                <Button Content="Remove Selected"
+                <Button Content="{Binding SelectedCount, StringFormat='Remove Selected ({0})'}"
                         Style="{StaticResource DangerButton}"
                         Command="{Binding RemoveSelectedCommand}"
-                        CommandParameter="{Binding SelectedItems, ElementName=BarcodeGrid}"
                         Margin="12,0,0,0"
                         VerticalAlignment="Center" />
             </StackPanel>
@@ -234,6 +239,25 @@
                           ItemsSource="{Binding Barcodes}"
                           RowStyle="{StaticResource DuplicateRowStyle}">
                     <DataGrid.Columns>
+                        <DataGridTemplateColumn Width="40" IsReadOnly="False">
+                            <DataGridTemplateColumn.HeaderTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding DataContext.IsAllSelected,
+                                                          RelativeSource={RelativeSource AncestorType=DataGrid},
+                                                          Mode=TwoWay}"
+                                              IsThreeState="True"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.HeaderTemplate>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTextColumn Header="#" Binding="{Binding SequenceNumber}" Width="50" />
                         <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="*" />
                         <DataGridTextColumn Header="Code Type" Binding="{Binding CodeType}" Width="100" />

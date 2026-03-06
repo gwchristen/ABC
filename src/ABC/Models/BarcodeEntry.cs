@@ -6,6 +6,7 @@ namespace ABC.Models;
 public class BarcodeEntry : INotifyPropertyChanged
 {
     private bool _isDuplicate;
+    private bool _isSelected;
     private int _sequenceNumber;
 
     public string Barcode { get; set; } = string.Empty;
@@ -32,6 +33,17 @@ public class BarcodeEntry : INotifyPropertyChanged
             if (_isDuplicate == value) return;
             _isDuplicate = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsDuplicate)));
+        }
+    }
+
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value) return;
+            _isSelected = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
         }
     }
 
