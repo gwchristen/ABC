@@ -94,8 +94,16 @@ public class BluetoothLiveViewModel : ViewModelBase
     public string AppendFilePath
     {
         get => _appendFilePath;
-        set => SetProperty(ref _appendFilePath, value);
+        set
+        {
+            SetProperty(ref _appendFilePath, value);
+            OnPropertyChanged(nameof(AppendFileName));
+        }
     }
+
+    public string AppendFileName => string.IsNullOrEmpty(_appendFilePath)
+        ? string.Empty
+        : System.IO.Path.GetFileName(_appendFilePath);
 
     public bool IsConnected
     {

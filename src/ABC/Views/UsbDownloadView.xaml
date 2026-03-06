@@ -166,7 +166,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBox Grid.Column="0"
-                                     Text="{Binding AppendFilePath}"
+                                     Text="{Binding AppendFileName, Mode=OneWay}"
                                      Style="{StaticResource ModernTextBox}"
                                      IsReadOnly="True"
                                      ToolTip="{Binding AppendFilePath}" />
