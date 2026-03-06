@@ -83,6 +83,13 @@ public class BluetoothLiveViewModel : ViewModelBase
         set => SetProperty(ref _saveAsCsv, value);
     }
 
+    private bool _appendToFile;
+    public bool AppendToFile
+    {
+        get => _appendToFile;
+        set => SetProperty(ref _appendToFile, value);
+    }
+
     public bool IsConnected
     {
         get => _isConnected;
@@ -463,13 +470,19 @@ public class BluetoothLiveViewModel : ViewModelBase
         StatusChanged?.Invoke(this, $"Saving to {fullPath}...");
         try
         {
-            bool saved = await Task.Run(() =>
-                SaveAsCsv
+            bool saved;
+            if (AppendToFile)
+                saved = await Task.Run(() => SaveAsCsv
+                    ? _fileExportService.AppendAsCsv(fullPath, snapshot)
+                    : _fileExportService.AppendAsText(fullPath, snapshot));
+            else
+                saved = await Task.Run(() => SaveAsCsv
                     ? _fileExportService.SaveAsCsv(fullPath, snapshot)
                     : _fileExportService.SaveAsText(fullPath, snapshot));
 
+            string action = AppendToFile ? "Appended" : "Saved";
             StatusChanged?.Invoke(this, saved
-                ? $"Saved {snapshot.Count} barcode(s) to {fullPath}."
+                ? $"{action} {snapshot.Count} barcode(s) to {fullPath}."
                 : "Failed to save file.");
         }
         catch (Exception ex)
