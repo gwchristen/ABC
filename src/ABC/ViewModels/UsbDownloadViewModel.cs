@@ -80,6 +80,13 @@ public class UsbDownloadViewModel : ViewModelBase
         set => SetProperty(ref _clearAfterSave, value);
     }
 
+    private bool _appendToFile;
+    public bool AppendToFile
+    {
+        get => _appendToFile;
+        set => SetProperty(ref _appendToFile, value);
+    }
+
     public bool IsBusy
     {
         get => _isBusy;
@@ -296,14 +303,20 @@ public class UsbDownloadViewModel : ViewModelBase
         StatusChanged?.Invoke(this, $"Saving to {fullPath}...");
         try
         {
-            bool saved = await Task.Run(() =>
-                SaveAsCsv
+            bool saved;
+            if (AppendToFile)
+                saved = await Task.Run(() => SaveAsCsv
+                    ? _fileExportService.AppendAsCsv(fullPath, Barcodes)
+                    : _fileExportService.AppendAsText(fullPath, Barcodes));
+            else
+                saved = await Task.Run(() => SaveAsCsv
                     ? _fileExportService.SaveAsCsv(fullPath, Barcodes)
                     : _fileExportService.SaveAsText(fullPath, Barcodes));
 
             if (saved)
             {
-                StatusChanged?.Invoke(this, $"Saved {Barcodes.Count} barcode(s) to {fullPath}.");
+                string action = AppendToFile ? "Appended" : "Saved";
+                StatusChanged?.Invoke(this, $"{action} {Barcodes.Count} barcode(s) to {fullPath}.");
                 if (ClearAfterSave)
                     await ClearScannerDataAsync();
             }

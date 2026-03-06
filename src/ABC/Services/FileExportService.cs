@@ -40,6 +40,42 @@ public class FileExportService : IFileExportService
         }
     }
 
+    public bool AppendAsText(string filePath, IEnumerable<BarcodeEntry> barcodes)
+    {
+        try
+        {
+            var lines = barcodes.Select(b => b.Barcode);
+            File.AppendAllLines(filePath, lines, Encoding.UTF8);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public bool AppendAsCsv(string filePath, IEnumerable<BarcodeEntry> barcodes)
+    {
+        try
+        {
+            var sb = new StringBuilder();
+            bool fileHasContent = File.Exists(filePath) && new FileInfo(filePath).Length > 0;
+            if (!fileHasContent)
+                sb.AppendLine("Barcode,CodeType,Timestamp,ScannerID");
+            foreach (var entry in barcodes)
+            {
+                string timestamp = entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss");
+                sb.AppendLine($"{EscapeCsv(entry.Barcode)},{EscapeCsv(entry.CodeType)},{timestamp},{EscapeCsv(entry.ScannerId)}");
+            }
+            File.AppendAllText(filePath, sb.ToString(), Encoding.UTF8);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static string EscapeCsv(string value)
     {
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))

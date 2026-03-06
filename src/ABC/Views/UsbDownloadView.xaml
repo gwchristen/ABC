@@ -151,6 +151,11 @@
                               IsChecked="{Binding ClearAfterSave}"
                               Margin="0,0,0,8" />
 
+                    <!-- Append to file -->
+                    <CheckBox Content="Append to file"
+                              IsChecked="{Binding AppendToFile}"
+                              Margin="0,0,0,8" />
+
                     <Button Content="Save"
                             Style="{StaticResource AccentButton}"
                             Command="{Binding SaveCommand}"
