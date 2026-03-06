@@ -56,6 +56,33 @@ public class UsbDownloadViewModel : ViewModelBase
 
     public bool HasDuplicates => DuplicateCount > 0;
 
+    public int SelectedCount => _barcodes.Count(b => b.IsSelected);
+
+    public bool HasSelected => SelectedCount > 0;
+
+    public bool? IsAllSelected
+    {
+        get
+        {
+            if (_barcodes.Count == 0) return false;
+            int selected = _barcodes.Count(b => b.IsSelected);
+            if (selected == 0) return false;
+            if (selected == _barcodes.Count) return true;
+            return null;
+        }
+        set
+        {
+            if (value == null) return;
+            bool newValue = value.Value;
+            foreach (var b in _barcodes)
+                b.IsSelected = newValue;
+            OnPropertyChanged(nameof(IsAllSelected));
+            OnPropertyChanged(nameof(SelectedCount));
+            OnPropertyChanged(nameof(HasSelected));
+            CommandManager.InvalidateRequerySuggested();
+        }
+    }
+
     public string SaveDirectory
     {
         get => _saveDirectory;
@@ -145,7 +172,7 @@ public class UsbDownloadViewModel : ViewModelBase
         BrowseDirectoryCommand = new RelayCommand(_ => BrowseDirectory());
         BrowseAppendFileCommand = new RelayCommand(_ => BrowseAppendFile());
         SaveCommand = new RelayCommand(async _ => await SaveAsync(), _ => !IsBusy && Barcodes.Count > 0);
-        RemoveSelectedCommand = new RelayCommand(RemoveSelected, param => !IsBusy && param is System.Collections.IList { Count: > 0 });
+        RemoveSelectedCommand = new RelayCommand(_ => RemoveSelected(), _ => !IsBusy && SelectedCount > 0);
     }
 
     private static IScannerService CreateDefaultScannerService()
@@ -227,13 +254,21 @@ public class UsbDownloadViewModel : ViewModelBase
             foreach (var b in barcodes)
                 b.IsDuplicate = duplicateValues.Contains(b.Barcode);
 
+            foreach (var b in _barcodes.ToList())
+                UnsubscribeFromBarcode(b);
             Barcodes.Clear();
             foreach (var b in barcodes)
+            {
+                SubscribeToBarcode(b);
                 Barcodes.Add(b);
+            }
 
             BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
             OnPropertyChanged(nameof(DuplicateCount));
             OnPropertyChanged(nameof(HasDuplicates));
+            OnPropertyChanged(nameof(IsAllSelected));
+            OnPropertyChanged(nameof(SelectedCount));
+            OnPropertyChanged(nameof(HasSelected));
             StatusChanged?.Invoke(this, $"Downloaded {barcodes.Count} barcode(s) from {ScannerInfo.Model}.");
         }
         catch (Exception ex)
@@ -264,10 +299,15 @@ public class UsbDownloadViewModel : ViewModelBase
             bool cleared = await Task.Run(() => _scannerService.ClearScannerData());
             if (cleared)
             {
+                foreach (var b in _barcodes.ToList())
+                    UnsubscribeFromBarcode(b);
                 Barcodes.Clear();
                 BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
                 OnPropertyChanged(nameof(DuplicateCount));
                 OnPropertyChanged(nameof(HasDuplicates));
+                OnPropertyChanged(nameof(IsAllSelected));
+                OnPropertyChanged(nameof(SelectedCount));
+                OnPropertyChanged(nameof(HasSelected));
                 StatusChanged?.Invoke(this, "Scanner data cleared successfully.");
             }
             else
@@ -409,21 +449,49 @@ public class UsbDownloadViewModel : ViewModelBase
         }
     }
 
-    private void RemoveSelected(object? parameter)
+    private void RemoveSelected()
     {
-        if (parameter is not System.Collections.IList selectedItems || selectedItems.Count == 0)
-            return;
-
-        var toRemove = selectedItems.Cast<BarcodeEntry>().ToList();
+        var toRemove = _barcodes.Where(b => b.IsSelected).ToList();
         foreach (var item in toRemove)
+        {
+            UnsubscribeFromBarcode(item);
             Barcodes.Remove(item);
+        }
 
         for (int i = 0; i < Barcodes.Count; i++)
             Barcodes[i].SequenceNumber = i + 1;
 
+        var duplicateValues = _barcodes
+            .GroupBy(b => b.Barcode)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToHashSet();
+        foreach (var b in _barcodes)
+            b.IsDuplicate = duplicateValues.Contains(b.Barcode);
+
         BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
         OnPropertyChanged(nameof(DuplicateCount));
         OnPropertyChanged(nameof(HasDuplicates));
+        OnPropertyChanged(nameof(IsAllSelected));
+        OnPropertyChanged(nameof(SelectedCount));
+        OnPropertyChanged(nameof(HasSelected));
+    }
+
+    private void SubscribeToBarcode(BarcodeEntry entry)
+        => entry.PropertyChanged += OnBarcodePropertyChanged;
+
+    private void UnsubscribeFromBarcode(BarcodeEntry entry)
+        => entry.PropertyChanged -= OnBarcodePropertyChanged;
+
+    private void OnBarcodePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(BarcodeEntry.IsSelected))
+        {
+            OnPropertyChanged(nameof(SelectedCount));
+            OnPropertyChanged(nameof(IsAllSelected));
+            OnPropertyChanged(nameof(HasSelected));
+            CommandManager.InvalidateRequerySuggested();
+        }
     }
 
     private static string GenerateDefaultFileName()
