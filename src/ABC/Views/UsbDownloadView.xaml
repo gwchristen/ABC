@@ -22,7 +22,8 @@
         </Grid.ColumnDefinitions>
 
         <!-- ===== Left Panel: Scanner Info ===== -->
-        <StackPanel Grid.Column="0">
+        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
 
             <!-- Scanner Detection Card -->
             <Border Style="{StaticResource CardBorder}">
@@ -185,6 +186,7 @@
                 </StackPanel>
             </Border>
         </StackPanel>
+        </ScrollViewer>
 
         <!-- Splitter -->
         <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"
