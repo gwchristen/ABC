@@ -90,6 +90,13 @@ public class BluetoothLiveViewModel : ViewModelBase
         set => SetProperty(ref _appendToFile, value);
     }
 
+    private string _appendFilePath = string.Empty;
+    public string AppendFilePath
+    {
+        get => _appendFilePath;
+        set => SetProperty(ref _appendFilePath, value);
+    }
+
     public bool IsConnected
     {
         get => _isConnected;
@@ -183,6 +190,7 @@ public class BluetoothLiveViewModel : ViewModelBase
     public ICommand DisconnectCommand { get; }
     public ICommand ClearDisplayCommand { get; }
     public ICommand BrowseDirectoryCommand { get; }
+    public ICommand BrowseAppendFileCommand { get; }
     public ICommand SaveCommand { get; }
     public ICommand ScanBleCommand { get; }
     public ICommand ConnectBleCommand { get; }
@@ -208,6 +216,7 @@ public class BluetoothLiveViewModel : ViewModelBase
         DisconnectCommand = new RelayCommand(_ => Disconnect(), _ => IsConnected);
         ClearDisplayCommand = new RelayCommand(_ => ClearDisplay());
         BrowseDirectoryCommand = new RelayCommand(_ => BrowseDirectory());
+        BrowseAppendFileCommand = new RelayCommand(_ => BrowseAppendFile());
         SaveCommand = new RelayCommand(async _ => await SaveAsync(), _ => _barcodes.Count > 0);
         ScanBleCommand = new RelayCommand(async _ => await ToggleBleDiscoveryAsync(), _ => !IsConnected);
         ConnectBleCommand = new RelayCommand(async _ => await ConnectBleAsync(), _ => !IsConnected && SelectedBleDevice != null);
@@ -452,8 +461,59 @@ public class BluetoothLiveViewModel : ViewModelBase
         }
     }
 
+    private void BrowseAppendFile()
+    {
+        try
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Select File to Append To",
+                Filter = "Text files (*.txt)|*.txt|CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+                InitialDirectory = string.IsNullOrWhiteSpace(AppendFilePath)
+                    ? SaveDirectory
+                    : Path.GetDirectoryName(AppendFilePath) ?? SaveDirectory
+            };
+
+            if (dialog.ShowDialog() == true)
+                AppendFilePath = dialog.FileName;
+        }
+        catch (Exception ex)
+        {
+            StatusChanged?.Invoke(this, $"Could not open file browser: {ex.Message}");
+        }
+    }
+
     private async Task SaveAsync()
     {
+        if (AppendToFile)
+        {
+            if (string.IsNullOrWhiteSpace(AppendFilePath))
+            {
+                StatusChanged?.Invoke(this, "Please select a file to append to.");
+                return;
+            }
+
+            bool isCsv = string.Equals(Path.GetExtension(AppendFilePath), ".csv", StringComparison.OrdinalIgnoreCase);
+
+            var snapshot = _barcodes.ToList();
+            StatusChanged?.Invoke(this, $"Appending to {AppendFilePath}...");
+            try
+            {
+                bool saved = await Task.Run(() => isCsv
+                    ? _fileExportService.AppendAsCsv(AppendFilePath, snapshot)
+                    : _fileExportService.AppendAsText(AppendFilePath, snapshot));
+
+                StatusChanged?.Invoke(this, saved
+                    ? $"Appended {snapshot.Count} barcode(s) to {AppendFilePath}."
+                    : "Failed to save file.");
+            }
+            catch (Exception ex)
+            {
+                StatusChanged?.Invoke(this, $"Save failed: {ex.Message}");
+            }
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(SaveDirectory))
         {
             StatusChanged?.Invoke(this, "Please select a save directory.");
@@ -466,23 +526,16 @@ public class BluetoothLiveViewModel : ViewModelBase
         string extension = SaveAsCsv ? ".csv" : ".txt";
         string fullPath = Path.Combine(SaveDirectory, FileName + extension);
 
-        var snapshot = _barcodes.ToList();
+        var barcodeSnapshot = _barcodes.ToList();
         StatusChanged?.Invoke(this, $"Saving to {fullPath}...");
         try
         {
-            bool saved;
-            if (AppendToFile)
-                saved = await Task.Run(() => SaveAsCsv
-                    ? _fileExportService.AppendAsCsv(fullPath, snapshot)
-                    : _fileExportService.AppendAsText(fullPath, snapshot));
-            else
-                saved = await Task.Run(() => SaveAsCsv
-                    ? _fileExportService.SaveAsCsv(fullPath, snapshot)
-                    : _fileExportService.SaveAsText(fullPath, snapshot));
+            bool saved = await Task.Run(() => SaveAsCsv
+                ? _fileExportService.SaveAsCsv(fullPath, barcodeSnapshot)
+                : _fileExportService.SaveAsText(fullPath, barcodeSnapshot));
 
-            string action = AppendToFile ? "Appended" : "Saved";
             StatusChanged?.Invoke(this, saved
-                ? $"{action} {snapshot.Count} barcode(s) to {fullPath}."
+                ? $"Saved {barcodeSnapshot.Count} barcode(s) to {fullPath}."
                 : "Failed to save file.");
         }
         catch (Exception ex)

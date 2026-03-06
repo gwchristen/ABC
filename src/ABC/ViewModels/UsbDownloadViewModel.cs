@@ -87,6 +87,13 @@ public class UsbDownloadViewModel : ViewModelBase
         set => SetProperty(ref _appendToFile, value);
     }
 
+    private string _appendFilePath = string.Empty;
+    public string AppendFilePath
+    {
+        get => _appendFilePath;
+        set => SetProperty(ref _appendFilePath, value);
+    }
+
     public bool IsBusy
     {
         get => _isBusy;
@@ -111,6 +118,7 @@ public class UsbDownloadViewModel : ViewModelBase
     public ICommand PreviewCommand { get; }
     public ICommand ClearScannerDataCommand { get; }
     public ICommand BrowseDirectoryCommand { get; }
+    public ICommand BrowseAppendFileCommand { get; }
     public ICommand SaveCommand { get; }
 
     public UsbDownloadViewModel() : this(CreateDefaultScannerService(), new FileExportService()) { }
@@ -126,6 +134,7 @@ public class UsbDownloadViewModel : ViewModelBase
         PreviewCommand = new RelayCommand(async _ => await PreviewAsync(), _ => !IsBusy && SelectedPort > 0);
         ClearScannerDataCommand = new RelayCommand(async _ => await ClearScannerDataAsync(), _ => !IsBusy && IsConnected);
         BrowseDirectoryCommand = new RelayCommand(_ => BrowseDirectory());
+        BrowseAppendFileCommand = new RelayCommand(_ => BrowseAppendFile());
         SaveCommand = new RelayCommand(async _ => await SaveAsync(), _ => !IsBusy && Barcodes.Count > 0);
     }
 
@@ -285,8 +294,70 @@ public class UsbDownloadViewModel : ViewModelBase
         }
     }
 
+    private void BrowseAppendFile()
+    {
+        try
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Select File to Append To",
+                Filter = "Text files (*.txt)|*.txt|CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+                InitialDirectory = string.IsNullOrWhiteSpace(AppendFilePath)
+                    ? SaveDirectory
+                    : Path.GetDirectoryName(AppendFilePath) ?? SaveDirectory
+            };
+
+            if (dialog.ShowDialog() == true)
+                AppendFilePath = dialog.FileName;
+        }
+        catch (Exception ex)
+        {
+            StatusChanged?.Invoke(this, $"Could not open file browser: {ex.Message}");
+        }
+    }
+
     private async Task SaveAsync()
     {
+        if (AppendToFile)
+        {
+            if (string.IsNullOrWhiteSpace(AppendFilePath))
+            {
+                StatusChanged?.Invoke(this, "Please select a file to append to.");
+                return;
+            }
+
+            bool isCsv = string.Equals(Path.GetExtension(AppendFilePath), ".csv", StringComparison.OrdinalIgnoreCase);
+
+            IsBusy = true;
+            StatusChanged?.Invoke(this, $"Appending to {AppendFilePath}...");
+            try
+            {
+                bool saved = await Task.Run(() => isCsv
+                    ? _fileExportService.AppendAsCsv(AppendFilePath, Barcodes)
+                    : _fileExportService.AppendAsText(AppendFilePath, Barcodes));
+
+                if (saved)
+                {
+                    StatusChanged?.Invoke(this, $"Appended {Barcodes.Count} barcode(s) to {AppendFilePath}.");
+                    if (ClearAfterSave)
+                        await ClearScannerDataAsync();
+                }
+                else
+                {
+                    StatusChanged?.Invoke(this, "Failed to save file.");
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusChanged?.Invoke(this, $"Save failed: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(SaveDirectory))
         {
             StatusChanged?.Invoke(this, "Please select a save directory.");
@@ -303,20 +374,13 @@ public class UsbDownloadViewModel : ViewModelBase
         StatusChanged?.Invoke(this, $"Saving to {fullPath}...");
         try
         {
-            bool saved;
-            if (AppendToFile)
-                saved = await Task.Run(() => SaveAsCsv
-                    ? _fileExportService.AppendAsCsv(fullPath, Barcodes)
-                    : _fileExportService.AppendAsText(fullPath, Barcodes));
-            else
-                saved = await Task.Run(() => SaveAsCsv
-                    ? _fileExportService.SaveAsCsv(fullPath, Barcodes)
-                    : _fileExportService.SaveAsText(fullPath, Barcodes));
+            bool saved = await Task.Run(() => SaveAsCsv
+                ? _fileExportService.SaveAsCsv(fullPath, Barcodes)
+                : _fileExportService.SaveAsText(fullPath, Barcodes));
 
             if (saved)
             {
-                string action = AppendToFile ? "Appended" : "Saved";
-                StatusChanged?.Invoke(this, $"{action} {Barcodes.Count} barcode(s) to {fullPath}.");
+                StatusChanged?.Invoke(this, $"Saved {Barcodes.Count} barcode(s) to {fullPath}.");
                 if (ClearAfterSave)
                     await ClearScannerDataAsync();
             }

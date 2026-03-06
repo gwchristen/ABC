@@ -331,6 +331,28 @@
                               IsChecked="{Binding AppendToFile}"
                               Margin="0,0,0,8" />
 
+                    <!-- Append file picker - visible only when AppendToFile is checked -->
+                    <StackPanel Visibility="{Binding AppendToFile, Converter={StaticResource BoolToVisibility}}"
+                                Margin="0,4,0,8">
+                        <TextBlock Text="Append to:" Style="{StaticResource InfoLabel}" Margin="0,0,0,4" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0"
+                                     Text="{Binding AppendFilePath}"
+                                     Style="{StaticResource ModernTextBox}"
+                                     IsReadOnly="True"
+                                     ToolTip="{Binding AppendFilePath}" />
+                            <Button Grid.Column="1"
+                                    Content="Browse..."
+                                    Command="{Binding BrowseAppendFileCommand}"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Margin="8,0,0,0" />
+                        </Grid>
+                    </StackPanel>
+
                     <Button Content="Save"
                             Style="{StaticResource AccentButton}"
                             Command="{Binding SaveCommand}"
