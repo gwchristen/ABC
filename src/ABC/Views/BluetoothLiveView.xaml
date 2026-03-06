@@ -22,7 +22,8 @@
         </Grid.ColumnDefinitions>
 
         <!-- ===== Left Panel: Bluetooth Settings ===== -->
-        <StackPanel Grid.Column="0">
+        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
 
             <!-- Connection Type Card -->
             <Border Style="{StaticResource CardBorder}">
@@ -360,6 +361,7 @@
                 </StackPanel>
             </Border>
         </StackPanel>
+        </ScrollViewer>
 
         <!-- Splitter -->
         <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"
