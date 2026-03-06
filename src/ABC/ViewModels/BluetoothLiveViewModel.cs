@@ -32,7 +32,7 @@ public class BluetoothLiveViewModel : ViewModelBase
     private bool _isWindowFocused = true;
     private readonly StringBuilder _hidBuffer = new();
     private readonly DispatcherTimer _hidTimer;
-    private const int HidBufferFlushTimeoutMs = 100;
+    private const int HidBufferFlushTimeoutMs = 150;
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler? BarcodeCountChanged;
