@@ -128,6 +128,7 @@ public class UsbDownloadViewModel : ViewModelBase
     public ICommand BrowseDirectoryCommand { get; }
     public ICommand BrowseAppendFileCommand { get; }
     public ICommand SaveCommand { get; }
+    public ICommand RemoveSelectedCommand { get; }
 
     public UsbDownloadViewModel() : this(CreateDefaultScannerService(), new FileExportService()) { }
 
@@ -144,6 +145,7 @@ public class UsbDownloadViewModel : ViewModelBase
         BrowseDirectoryCommand = new RelayCommand(_ => BrowseDirectory());
         BrowseAppendFileCommand = new RelayCommand(_ => BrowseAppendFile());
         SaveCommand = new RelayCommand(async _ => await SaveAsync(), _ => !IsBusy && Barcodes.Count > 0);
+        RemoveSelectedCommand = new RelayCommand(RemoveSelected, param => !IsBusy && param is System.Collections.IList { Count: > 0 });
     }
 
     private static IScannerService CreateDefaultScannerService()
@@ -405,6 +407,23 @@ public class UsbDownloadViewModel : ViewModelBase
         {
             IsBusy = false;
         }
+    }
+
+    private void RemoveSelected(object? parameter)
+    {
+        if (parameter is not System.Collections.IList selectedItems || selectedItems.Count == 0)
+            return;
+
+        var toRemove = selectedItems.Cast<BarcodeEntry>().ToList();
+        foreach (var item in toRemove)
+            Barcodes.Remove(item);
+
+        for (int i = 0; i < Barcodes.Count; i++)
+            Barcodes[i].SequenceNumber = i + 1;
+
+        BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
+        OnPropertyChanged(nameof(DuplicateCount));
+        OnPropertyChanged(nameof(HasDuplicates));
     }
 
     private static string GenerateDefaultFileName()
