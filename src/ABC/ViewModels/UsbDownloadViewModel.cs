@@ -156,6 +156,7 @@ public class UsbDownloadViewModel : ViewModelBase
     public ICommand BrowseAppendFileCommand { get; }
     public ICommand SaveCommand { get; }
     public ICommand RemoveSelectedCommand { get; }
+    public ICommand ClearSelectionCommand { get; }
 
     public UsbDownloadViewModel() : this(CreateDefaultScannerService(), new FileExportService()) { }
 
@@ -173,6 +174,7 @@ public class UsbDownloadViewModel : ViewModelBase
         BrowseAppendFileCommand = new RelayCommand(_ => BrowseAppendFile());
         SaveCommand = new RelayCommand(async _ => await SaveAsync(), _ => !IsBusy && Barcodes.Count > 0);
         RemoveSelectedCommand = new RelayCommand(_ => RemoveSelected(), _ => !IsBusy && SelectedCount > 0);
+        ClearSelectionCommand = new RelayCommand(_ => ClearSelection(), _ => SelectedCount > 0);
     }
 
     private static IScannerService CreateDefaultScannerService()
@@ -475,6 +477,16 @@ public class UsbDownloadViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsAllSelected));
         OnPropertyChanged(nameof(SelectedCount));
         OnPropertyChanged(nameof(HasSelected));
+    }
+
+    private void ClearSelection()
+    {
+        foreach (var b in _barcodes)
+            b.IsSelected = false;
+        OnPropertyChanged(nameof(SelectedCount));
+        OnPropertyChanged(nameof(IsAllSelected));
+        OnPropertyChanged(nameof(HasSelected));
+        CommandManager.InvalidateRequerySuggested();
     }
 
     private void SubscribeToBarcode(BarcodeEntry entry)
