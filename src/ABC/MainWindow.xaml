@@ -33,6 +33,9 @@
                 <TabItem Header="Range Maker">
                     <views:RangeMakerView DataContext="{Binding RangeMaker}" />
                 </TabItem>
+                <TabItem Header="Scanner Settings">
+                    <views:ScannerSettingsView DataContext="{Binding ScannerSettings}" />
+                </TabItem>
             </TabControl>
 
             <!-- Theme toggle button overlaid at top-right of the tab strip -->

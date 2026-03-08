@@ -407,6 +407,24 @@ public class OpticonScannerService : IScannerService
         }
     }
 
+    public int GetParam(int paramNumber, byte[] buffer, int length)
+    {
+        var result = InvokeStatic("GetParam", paramNumber, buffer, length);
+        return result != null ? (int)result : -1;
+    }
+
+    public int SetParam(int paramNumber, byte[] buffer, int length)
+    {
+        var result = InvokeStatic("SetParam", paramNumber, buffer, length);
+        return result != null ? (int)result : -1;
+    }
+
+    public int SetDefaults()
+    {
+        var result = InvokeStatic("SetDefaults");
+        return result != null ? (int)result : -1;
+    }
+
     private object? InvokeStatic(string methodName, params object[] args)
     {
         var method = _csp2Type?.GetMethod(methodName);

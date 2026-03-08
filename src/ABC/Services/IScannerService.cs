@@ -11,4 +11,7 @@ public interface IScannerService
     List<BarcodeEntry> ReadAllBarcodes();
     bool ClearScannerData();
     bool IsConnected { get; }
+    int GetParam(int paramNumber, byte[] buffer, int length);
+    int SetParam(int paramNumber, byte[] buffer, int length);
+    int SetDefaults();
 }
