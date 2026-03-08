@@ -157,7 +157,10 @@ public class BluetoothLiveViewModel : ViewModelBase
 
     public bool IsHidListening => _bluetoothService.IsHidListening;
 
-    public bool ShowFocusWarning => IsHidListening && !_isWindowFocused;
+    // Raw Input with RIDEV_INPUTSINK captures HID keystrokes even when the
+    // window is in the background, so no focus warning is needed.
+    // The property is retained because the XAML visibility binding uses it.
+    public bool ShowFocusWarning => false;
 
     public bool IsWindowFocused
     {
