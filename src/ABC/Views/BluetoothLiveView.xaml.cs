@@ -1,3 +1,4 @@
+using System.Windows.Controls;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,8 +18,6 @@ public partial class BluetoothLiveView : UserControl
     public BluetoothLiveView()
     {
         InitializeComponent();
-        Loaded += OnLoaded;
-        Unloaded += OnUnloaded;
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
