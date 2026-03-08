@@ -233,9 +233,9 @@ public class BluetoothLiveViewModel : ViewModelBase
         ClearDisplayCommand = new RelayCommand(_ => ClearDisplay());
         BrowseDirectoryCommand = new RelayCommand(_ => BrowseDirectory());
         BrowseAppendFileCommand = new RelayCommand(_ => BrowseAppendFile());
-        SaveCommand = new RelayCommand(async _ => await SaveAsync(), _ => _barcodes.Count > 0);
-        ScanBleCommand = new RelayCommand(async _ => await ToggleBleDiscoveryAsync(), _ => !IsConnected);
-        ConnectBleCommand = new RelayCommand(async _ => await ConnectBleAsync(), _ => !IsConnected && SelectedBleDevice != null);
+        SaveCommand = new AsyncRelayCommand(async () => await SaveAsync(), () => _barcodes.Count > 0);
+        ScanBleCommand = new AsyncRelayCommand(async () => await ToggleBleDiscoveryAsync(), () => !IsConnected);
+        ConnectBleCommand = new AsyncRelayCommand(async () => await ConnectBleAsync(), () => !IsConnected && SelectedBleDevice != null);
 
         RefreshPorts();
     }
@@ -356,6 +356,12 @@ public class BluetoothLiveViewModel : ViewModelBase
         IsConnected = false;
         IsScanningBle = false;
         StatusChanged?.Invoke(this, "Disconnected from Bluetooth scanner.");
+    }
+
+    public void Cleanup()
+    {
+        if (IsConnected)
+            Disconnect();
     }
 
     private void ClearDisplay()

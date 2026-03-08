@@ -56,7 +56,14 @@
                     <Button Content="Connect"
                             Style="{StaticResource AccentButton}"
                             Command="{Binding ConnectCommand}"
-                            HorizontalAlignment="Stretch" />
+                            HorizontalAlignment="Stretch"
+                            Margin="0,0,0,4" />
+
+                    <Button Content="Disconnect"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding DisconnectCommand}"
+                            HorizontalAlignment="Stretch"
+                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}}" />
                 </StackPanel>
             </Border>
 

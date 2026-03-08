@@ -32,7 +32,7 @@ public class OpticonScannerService : IScannerService
 
     public List<int> DetectScanners()
     {
-        System.Diagnostics.Debug.WriteLine("[OpticonScannerService] DetectScanners entered");
+        LogService.Debug("[OpticonScannerService] DetectScanners entered");
         LastError = null;
         try
         {
@@ -50,7 +50,7 @@ public class OpticonScannerService : IScannerService
             int[] portArray = new int[256]; // generous buffer
             var method = _csp2Type.GetMethod("GetOpnCompatiblePorts", new Type[] { typeof(int[]) });
             var result = (int)(method?.Invoke(null, new object[] { portArray }) ?? -1);
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetOpnCompatiblePorts returned: {result}");
+            LogService.Debug($"[OpticonScannerService] GetOpnCompatiblePorts returned: {result}");
 
             // result is the count of ports found; extract portArray[0..result-1]
             // If result <= 0, no ports found
@@ -64,15 +64,15 @@ public class OpticonScannerService : IScannerService
             {
                 LastError = "GetOpnCompatiblePorts returned no ports. Ensure scanner is connected via USB and powered on.";
             }
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Detected ports: {string.Join(", ", ports.Select(p => $"COM{p}"))}");
+            LogService.Debug($"[OpticonScannerService] Detected ports: {string.Join(", ", ports.Select(p => $"COM{p}"))}");
             return ports;
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] DetectScanners failed: {ex.GetType().Name}: {ex.Message}");
+            LogService.Error($"[OpticonScannerService] DetectScanners failed: {ex.GetType().Name}: {ex.Message}");
             if (ex.InnerException != null)
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
+                LogService.Error($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+            LogService.Error($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
             LastError = $"DetectScanners exception: {ex.GetType().Name}: {ex.Message}";
             return new List<int>();
         }
@@ -80,7 +80,7 @@ public class OpticonScannerService : IScannerService
 
     public bool Connect(int comPort)
     {
-        System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Connect to COM{comPort}");
+        LogService.Debug($"[OpticonScannerService] Connect to COM{comPort}");
         try
         {
             var csp2Type = LoadCsp2Type();
@@ -92,14 +92,14 @@ public class OpticonScannerService : IScannerService
             // Init(int nComPort) - returns 0 on success
             var initMethod = _csp2Type.GetMethod("Init", new Type[] { typeof(int) });
             int initResult = (int)(initMethod?.Invoke(null, new object[] { comPort }) ?? -1);
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Init({comPort}) returned: {initResult}");
+            LogService.Debug($"[OpticonScannerService] Init({comPort}) returned: {initResult}");
             if (initResult == 0)
             {
                 // WakeUp() - no-parameter overload
                 var wakeMethod = _csp2Type.GetMethod("WakeUp", Type.EmptyTypes);
                 var wakeResult = wakeMethod?.Invoke(null, null);
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] WakeUp() returned: {wakeResult}");
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Connected successfully to COM{comPort}");
+                LogService.Debug($"[OpticonScannerService] WakeUp() returned: {wakeResult}");
+                LogService.Debug($"[OpticonScannerService] Connected successfully to COM{comPort}");
                 _connectedPort = comPort;
                 _isConnected = true;
                 return true;
@@ -108,17 +108,17 @@ public class OpticonScannerService : IScannerService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Connect failed: {ex.GetType().Name}: {ex.Message}");
+            LogService.Error($"[OpticonScannerService] Connect failed: {ex.GetType().Name}: {ex.Message}");
             if (ex.InnerException != null)
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
+                LogService.Error($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+            LogService.Error($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
             return false;
         }
     }
 
     public void Disconnect()
     {
-        System.Diagnostics.Debug.WriteLine("[OpticonScannerService] Disconnect");
+        LogService.Debug("[OpticonScannerService] Disconnect");
         try
         {
             // Restore() - no-parameter overload
@@ -127,10 +127,10 @@ public class OpticonScannerService : IScannerService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Disconnect failed: {ex.GetType().Name}: {ex.Message}");
+            LogService.Error($"[OpticonScannerService] Disconnect failed: {ex.GetType().Name}: {ex.Message}");
             if (ex.InnerException != null)
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
+                LogService.Error($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+            LogService.Error($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
         }
         finally
         {
@@ -143,7 +143,7 @@ public class OpticonScannerService : IScannerService
 
     public ScannerInfo GetScannerInfo()
     {
-        System.Diagnostics.Debug.WriteLine("[OpticonScannerService] GetScannerInfo entered");
+        LogService.Debug("[OpticonScannerService] GetScannerInfo entered");
         if (!_isConnected || _csp2Type is null)
             throw new InvalidOperationException("Scanner is not connected.");
 
@@ -157,11 +157,11 @@ public class OpticonScannerService : IScannerService
                 object?[] args = new object?[] { null };
                 var idResult = getDeviceIdMethod.Invoke(null, args);
                 deviceId = args[0] as string ?? "Unknown";
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetDeviceId returned: {idResult}, deviceId='{deviceId}'");
+                LogService.Debug($"[OpticonScannerService] GetDeviceId returned: {idResult}, deviceId='{deviceId}'");
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine("[OpticonScannerService] GetDeviceId method not found");
+                LogService.Error("[OpticonScannerService] GetDeviceId method not found");
             }
 
             // GetSwVersion(StringBuilder szSwVersion, Int32 nMaxLength)
@@ -172,7 +172,7 @@ public class OpticonScannerService : IScannerService
                 var sb = new StringBuilder(256);
                 var swResult = getSwVersionMethod.Invoke(null, new object[] { sb, 256 });
                 swVersion = sb.ToString();
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetSwVersion returned: {swResult}, version='{swVersion}'");
+                LogService.Debug($"[OpticonScannerService] GetSwVersion returned: {swResult}, version='{swVersion}'");
             }
 
             // DataAvailable() - returns barcode count
@@ -181,7 +181,7 @@ public class OpticonScannerService : IScannerService
             if (dataAvailMethod != null)
             {
                 barcodeCount = (int)dataAvailMethod.Invoke(null, null)!;
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] DataAvailable returned: {barcodeCount}");
+                LogService.Debug($"[OpticonScannerService] DataAvailable returned: {barcodeCount}");
             }
 
             // GetSystemStatus() - returns battery/system info
@@ -190,7 +190,7 @@ public class OpticonScannerService : IScannerService
             if (sysStatusMethod != null)
             {
                 systemStatus = (int)sysStatusMethod.Invoke(null, null)!;
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetSystemStatus returned: {systemStatus}");
+                LogService.Debug($"[OpticonScannerService] GetSystemStatus returned: {systemStatus}");
             }
 
             // GetProtocol()
@@ -199,10 +199,10 @@ public class OpticonScannerService : IScannerService
             if (protoMethod != null)
             {
                 protocol = (int)protoMethod.Invoke(null, null)!;
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetProtocol returned: {protocol}");
+                LogService.Debug($"[OpticonScannerService] GetProtocol returned: {protocol}");
             }
 
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] ScannerInfo: Model='{deviceId}', FW='{swVersion}', Barcodes={barcodeCount}, Status={systemStatus}, Protocol={protocol}");
+            LogService.Debug($"[OpticonScannerService] ScannerInfo: Model='{deviceId}', FW='{swVersion}', Barcodes={barcodeCount}, Status={systemStatus}, Protocol={protocol}");
 
             return new ScannerInfo
             {
@@ -217,20 +217,20 @@ public class OpticonScannerService : IScannerService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetScannerInfo failed: {ex.GetType().Name}: {ex.Message}");
+            LogService.Error($"[OpticonScannerService] GetScannerInfo failed: {ex.GetType().Name}: {ex.Message}");
             if (ex.InnerException != null)
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
+                LogService.Error($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+            LogService.Error($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
             throw new InvalidOperationException($"Failed to read scanner info: {ex.Message}", ex);
         }
     }
 
     public List<BarcodeEntry> ReadAllBarcodes()
     {
-        System.Diagnostics.Debug.WriteLine("[OpticonScannerService] ReadAllBarcodes entered");
+        LogService.Debug("[OpticonScannerService] ReadAllBarcodes entered");
         if (!_isConnected || _csp2Type is null)
         {
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] ReadAllBarcodes precondition failed: IsConnected={_isConnected}, _csp2Type={(_csp2Type != null ? "loaded" : "null")}");
+            LogService.Error($"[OpticonScannerService] ReadAllBarcodes precondition failed: IsConnected={_isConnected}, _csp2Type={(_csp2Type != null ? "loaded" : "null")}");
             throw new InvalidOperationException("Scanner is not connected.");
         }
 
@@ -242,7 +242,7 @@ public class OpticonScannerService : IScannerService
             if (readDataMethod != null)
             {
                 var readResult = readDataMethod.Invoke(null, null);
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] ReadData() returned: {readResult}");
+                LogService.Debug($"[OpticonScannerService] ReadData() returned: {readResult}");
                 if (readResult is int readCount && readCount > 0)
                 {
                     count = readCount;
@@ -250,7 +250,7 @@ public class OpticonScannerService : IScannerService
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine("[OpticonScannerService] ReadData method not found!");
+                LogService.Error("[OpticonScannerService] ReadData method not found!");
             }
 
             // Fall back to DataAvailable() if ReadData() returned 0 or a negative value
@@ -260,18 +260,18 @@ public class OpticonScannerService : IScannerService
                 if (dataAvailMethod != null)
                 {
                     var dataAvailResult = (int)dataAvailMethod.Invoke(null, null)!;
-                    System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] DataAvailable() returned: {dataAvailResult} (fallback)");
+                    LogService.Debug($"[OpticonScannerService] DataAvailable() returned: {dataAvailResult} (fallback)");
                     count = dataAvailResult;
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("[OpticonScannerService] DataAvailable method not found!");
+                    LogService.Error("[OpticonScannerService] DataAvailable method not found!");
                 }
             }
 
             if (count <= 0)
             {
-                System.Diagnostics.Debug.WriteLine("[OpticonScannerService] No barcodes available (count <= 0), returning empty list");
+                LogService.Debug("[OpticonScannerService] No barcodes available (count <= 0), returning empty list");
                 return new List<BarcodeEntry>();
             }
 
@@ -279,13 +279,13 @@ public class OpticonScannerService : IScannerService
             var packetType = _barCodeDataPacketType
                 ?? _csp2Type.Assembly.GetType("Opticon.csp2+BarCodeDataPacket");
             _barCodeDataPacketType = packetType;
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] BarCodeDataPacket type: {(packetType != null ? packetType.FullName : "NOT FOUND")}, IsValueType={packetType?.IsValueType}");
+            LogService.Debug($"[OpticonScannerService] BarCodeDataPacket type: {(packetType != null ? packetType.FullName : "NOT FOUND")}, IsValueType={packetType?.IsValueType}");
 
             // GetPacket(BarCodeDataPacket& aPacket, Int32 nBarcodeNumber) for each barcode
             var getPacketMethod = packetType != null
                 ? _csp2Type.GetMethod("GetPacket", new Type[] { packetType.MakeByRefType(), typeof(int) })
                 : null;
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetPacket method: {(getPacketMethod != null ? "found" : "NOT FOUND")}");
+            LogService.Debug($"[OpticonScannerService] GetPacket method: {(getPacketMethod != null ? "found" : "NOT FOUND")}");
 
             var barcodes = new List<BarcodeEntry>();
 
@@ -306,7 +306,7 @@ public class OpticonScannerService : IScannerService
 
                 object?[] args = new object?[] { Activator.CreateInstance(packetType), i };
                 int result = (int)(getPacketMethod.Invoke(null, args) ?? -1);
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetPacket({i}) returned: {result}, packet is {(args[0] != null ? "not null" : "null")}");
+                LogService.Debug($"[OpticonScannerService] GetPacket({i}) returned: {result}, packet is {(args[0] != null ? "not null" : "null")}");
                 if (result >= 0 && args[0] != null)
                 {
                     string barcodeData = "";
@@ -317,14 +317,14 @@ public class OpticonScannerService : IScannerService
                     if (i == 0)
                     {
                         var allFields = packetType.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                        System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] BarCodeDataPacket fields:");
+                        LogService.Debug($"[OpticonScannerService] BarCodeDataPacket fields:");
                         foreach (var f in allFields)
-                            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   {f.FieldType.Name} {f.Name}");
+                            LogService.Debug($"[OpticonScannerService]   {f.FieldType.Name} {f.Name}");
 
                         var allProps = packetType.GetProperties();
-                        System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] BarCodeDataPacket properties:");
+                        LogService.Debug($"[OpticonScannerService] BarCodeDataPacket properties:");
                         foreach (var p in allProps)
-                            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   {p.PropertyType.Name} {p.Name}");
+                            LogService.Debug($"[OpticonScannerService]   {p.PropertyType.Name} {p.Name}");
                     }
 
                     try
@@ -358,11 +358,11 @@ public class OpticonScannerService : IScannerService
                                 timestamp = dt;
                         }
 
-                        System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Barcode[{i}]: data='{barcodeData}', codeType='{codeType}', timestamp={timestamp}");
+                        LogService.Debug($"[OpticonScannerService] Barcode[{i}]: data='{barcodeData}', codeType='{codeType}', timestamp={timestamp}");
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Error reading packet fields: {ex.Message}");
+                        LogService.Error($"[OpticonScannerService] Error reading packet fields: {ex.Message}");
                         // Fallback: try ToString
                         barcodeData = args[0]?.ToString() ?? $"Barcode_{i}";
                     }
@@ -377,7 +377,7 @@ public class OpticonScannerService : IScannerService
                     });
                 }
             }
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] ReadAllBarcodes returning {barcodes.Count} barcode(s)");
+            LogService.Debug($"[OpticonScannerService] ReadAllBarcodes returning {barcodes.Count} barcode(s)");
             return barcodes;
         }
         catch (Exception ex)
@@ -417,18 +417,18 @@ public class OpticonScannerService : IScannerService
             var method = _csp2Type.GetMethod("GetParam", new Type[] { typeof(int), typeof(byte[]), typeof(int) });
             if (method == null)
             {
-                System.Diagnostics.Debug.WriteLine("[OpticonScannerService] GetParam method not found");
+                LogService.Error("[OpticonScannerService] GetParam method not found");
                 return -1;
             }
             var result = (int)(method.Invoke(null, new object[] { paramNumber, buffer, length }) ?? -1);
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetParam({paramNumber}) returned: {result}, buffer[0]={(buffer.Length > 0 ? buffer[0] : (byte)0)}");
+            LogService.Debug($"[OpticonScannerService] GetParam({paramNumber}) returned: {result}, buffer[0]={(buffer.Length > 0 ? buffer[0] : (byte)0)}");
             return result;
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetParam failed: {ex.GetType().Name}: {ex.Message}");
+            LogService.Error($"[OpticonScannerService] GetParam failed: {ex.GetType().Name}: {ex.Message}");
             if (ex.InnerException != null)
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                LogService.Error($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
             return -1;
         }
     }
@@ -443,18 +443,18 @@ public class OpticonScannerService : IScannerService
             var method = _csp2Type.GetMethod("SetParam", new Type[] { typeof(int), typeof(byte[]), typeof(int) });
             if (method == null)
             {
-                System.Diagnostics.Debug.WriteLine("[OpticonScannerService] SetParam method not found");
+                LogService.Error("[OpticonScannerService] SetParam method not found");
                 return -1;
             }
             var result = (int)(method.Invoke(null, new object[] { paramNumber, buffer, length }) ?? -1);
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] SetParam({paramNumber}, {(buffer.Length > 0 ? buffer[0] : (byte)0)}) returned: {result}");
+            LogService.Debug($"[OpticonScannerService] SetParam({paramNumber}, {(buffer.Length > 0 ? buffer[0] : (byte)0)}) returned: {result}");
             return result;
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] SetParam failed: {ex.GetType().Name}: {ex.Message}");
+            LogService.Error($"[OpticonScannerService] SetParam failed: {ex.GetType().Name}: {ex.Message}");
             if (ex.InnerException != null)
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                LogService.Error($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
             return -1;
         }
     }
@@ -469,18 +469,18 @@ public class OpticonScannerService : IScannerService
             var method = _csp2Type.GetMethod("SetDefaults", Type.EmptyTypes);
             if (method == null)
             {
-                System.Diagnostics.Debug.WriteLine("[OpticonScannerService] SetDefaults method not found");
+                LogService.Error("[OpticonScannerService] SetDefaults method not found");
                 return -1;
             }
             var result = (int)(method.Invoke(null, null) ?? -1);
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] SetDefaults returned: {result}");
+            LogService.Debug($"[OpticonScannerService] SetDefaults returned: {result}");
             return result;
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] SetDefaults failed: {ex.GetType().Name}: {ex.Message}");
+            LogService.Error($"[OpticonScannerService] SetDefaults failed: {ex.GetType().Name}: {ex.Message}");
             if (ex.InnerException != null)
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                LogService.Error($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
             return -1;
         }
     }
@@ -494,21 +494,21 @@ public class OpticonScannerService : IScannerService
             method = _csp2Type?.GetMethod(methodName, AllDeclaredBindingFlags & ~System.Reflection.BindingFlags.DeclaredOnly);
             if (method != null)
             {
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Method '{methodName}' found with extended binding flags (IsStatic={method.IsStatic}, IsPublic={method.IsPublic})");
+                LogService.Debug($"[OpticonScannerService] Method '{methodName}' found with extended binding flags (IsStatic={method.IsStatic}, IsPublic={method.IsPublic})");
                 if (!method.IsStatic)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Method '{methodName}' is an instance method and cannot be invoked without an instance; skipping");
+                    LogService.Debug($"[OpticonScannerService] Method '{methodName}' is an instance method and cannot be invoked without an instance; skipping");
                     return null;
                 }
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] Method '{methodName}' not found on type '{_csp2Type?.FullName}'");
+                LogService.Error($"[OpticonScannerService] Method '{methodName}' not found on type '{_csp2Type?.FullName}'");
                 return null;
             }
         }
         var result = method.Invoke(null, args.Length > 0 ? args : Array.Empty<object>());
-        System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] {methodName} returned: {result} (type: {result?.GetType().Name ?? "null"})");
+        LogService.Debug($"[OpticonScannerService] {methodName} returned: {result} (type: {result?.GetType().Name ?? "null"})");
         return result;
     }
 
@@ -517,42 +517,42 @@ public class OpticonScannerService : IScannerService
         try
         {
             string dllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Opticon.csp2.net.dll");
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: trying DLL path: {dllPath}");
+            LogService.Debug($"[OpticonScannerService] LoadCsp2Type: trying DLL path: {dllPath}");
             if (!File.Exists(dllPath))
             {
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: DLL not found at {dllPath}");
+                LogService.Error($"[OpticonScannerService] LoadCsp2Type: DLL not found at {dllPath}");
                 LastError = $"Opticon DLL not found at: {dllPath}";
                 return null;
             }
 
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: DLL found, loading assembly");
+            LogService.Debug($"[OpticonScannerService] LoadCsp2Type: DLL found, loading assembly");
             var assembly = System.Reflection.Assembly.LoadFrom(dllPath);
             var csp2Type = assembly.GetType("Opticon.csp2");
             if (csp2Type is null)
             {
                 var availableTypes = string.Join(", ", assembly.GetExportedTypes().Select(t => t.FullName));
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: type 'Opticon.csp2' not found. Available: {availableTypes}");
+                LogService.Error($"[OpticonScannerService] LoadCsp2Type: type 'Opticon.csp2' not found. Available: {availableTypes}");
                 LastError = $"Type 'Opticon.csp2' not found in assembly. Available types: {availableTypes}";
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: type 'Opticon.csp2' loaded successfully");
+                LogService.Debug($"[OpticonScannerService] LoadCsp2Type: type 'Opticon.csp2' loaded successfully");
                 var allMethods = csp2Type.GetMethods(AllDeclaredBindingFlags);
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type: found {allMethods.Length} declared methods:");
+                LogService.Debug($"[OpticonScannerService] LoadCsp2Type: found {allMethods.Length} declared methods:");
                 foreach (var m in allMethods)
                 {
                     var parameters = string.Join(", ", m.GetParameters().Select(p => $"{p.ParameterType.Name} {p.Name}"));
-                    System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   {(m.IsStatic ? "static " : "")}{m.ReturnType.Name} {m.Name}({parameters})");
+                    LogService.Debug($"[OpticonScannerService]   {(m.IsStatic ? "static " : "")}{m.ReturnType.Name} {m.Name}({parameters})");
                 }
             }
             return csp2Type;
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] LoadCsp2Type failed: {ex.GetType().Name}: {ex.Message}");
+            LogService.Error($"[OpticonScannerService] LoadCsp2Type failed: {ex.GetType().Name}: {ex.Message}");
             if (ex.InnerException != null)
-                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
-            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
+                LogService.Error($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+            LogService.Error($"[OpticonScannerService]   StackTrace: {ex.StackTrace}");
             LastError = $"LoadCsp2Type failed: {ex.GetType().Name}: {ex.Message}";
             if (ex.InnerException != null)
                 LastError += $" Inner: {ex.InnerException.Message}";
