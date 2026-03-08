@@ -313,10 +313,12 @@
         <Grid Grid.Column="4">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+            <!-- Row 0: Title and count -->
+            <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
                 <TextBlock Text="Generated Range"
                            Style="{StaticResource SectionHeader}"
                            VerticalAlignment="Center"
@@ -324,14 +326,17 @@
                 <TextBlock Text="{Binding GeneratedRangeCount, StringFormat='{}{0} barcode(s)'}"
                            Style="{StaticResource InfoLabel}"
                            VerticalAlignment="Center" />
+            </WrapPanel>
+
+            <!-- Row 1: Action buttons -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,4">
                 <Button Content="Clear Range"
                         Style="{StaticResource DangerButton}"
                         Command="{Binding ClearRangeCommand}"
-                        Margin="8,0,0,0"
                         VerticalAlignment="Center" />
             </StackPanel>
 
-            <Border Grid.Row="1" Style="{StaticResource CardBorder}" Margin="0">
+            <Border Grid.Row="2" Style="{StaticResource CardBorder}" Margin="0">
                 <DataGrid Style="{StaticResource ModernDataGrid}"
                           ItemsSource="{Binding GeneratedRange}"
                           IsReadOnly="True">
