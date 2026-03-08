@@ -11,6 +11,7 @@ public class MainViewModel : ViewModelBase
     public UsbDownloadViewModel UsbDownload { get; }
     public BluetoothLiveViewModel BluetoothLive { get; }
     public RangeMakerViewModel RangeMaker { get; }
+    public ScannerSettingsViewModel ScannerSettings { get; }
 
     public string StatusMessage
     {
@@ -33,10 +34,12 @@ public class MainViewModel : ViewModelBase
         UsbDownload = new UsbDownloadViewModel();
         BluetoothLive = new BluetoothLiveViewModel();
         RangeMaker = new RangeMakerViewModel();
+        ScannerSettings = new ScannerSettingsViewModel();
 
         UsbDownload.StatusChanged += OnChildStatusChanged;
         BluetoothLive.StatusChanged += OnChildStatusChanged;
         RangeMaker.StatusChanged += OnChildStatusChanged;
+        ScannerSettings.StatusChanged += OnChildStatusChanged;
 
         UsbDownload.BarcodeCountChanged += OnBarcodeCountChanged;
         BluetoothLive.BarcodeCountChanged += OnBarcodeCountChanged;

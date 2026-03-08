@@ -11,6 +11,18 @@ public class MockScannerService : IScannerService
     private bool _isConnected;
     private int _connectedPort;
 
+    private readonly Dictionary<int, byte> _mockParams = new()
+    {
+        { 2, 1 },   // Buzzer on
+        { 4, 0 },   // Reject redundant off
+        { 7, 3 },   // Low-battery LED+Buzzer
+        { 10, 1 },  // Host connect beep on
+        { 11, 1 },  // Host complete beep on
+        { 17, 10 }, // Scanner on-time 10s
+        { 34, 30 }, // Max barcode length 30
+        { 35, 1 },  // Store RTC timestamp on
+    };
+
     public bool IsConnected => _isConnected;
 
     public List<int> DetectScanners()
@@ -69,5 +81,33 @@ public class MockScannerService : IScannerService
             throw new InvalidOperationException("Scanner is not connected.");
 
         return true;
+    }
+
+    public int GetParam(int paramNumber, byte[] buffer, int length)
+    {
+        if (!_isConnected) return -1;
+        buffer[0] = _mockParams.ContainsKey(paramNumber) ? _mockParams[paramNumber] : (byte)0;
+        return 0;
+    }
+
+    public int SetParam(int paramNumber, byte[] buffer, int length)
+    {
+        if (!_isConnected) return -1;
+        _mockParams[paramNumber] = buffer[0];
+        return 0;
+    }
+
+    public int SetDefaults()
+    {
+        if (!_isConnected) return -1;
+        _mockParams[2] = 1;
+        _mockParams[4] = 0;
+        _mockParams[7] = 3;
+        _mockParams[10] = 1;
+        _mockParams[11] = 1;
+        _mockParams[17] = 10;
+        _mockParams[34] = 30;
+        _mockParams[35] = 1;
+        return 0;
     }
 }
