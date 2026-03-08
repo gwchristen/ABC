@@ -10,6 +10,7 @@ public class MainViewModel : ViewModelBase
 
     public UsbDownloadViewModel UsbDownload { get; }
     public BluetoothLiveViewModel BluetoothLive { get; }
+    public RangeMakerViewModel RangeMaker { get; }
 
     public string StatusMessage
     {
@@ -31,12 +32,15 @@ public class MainViewModel : ViewModelBase
     {
         UsbDownload = new UsbDownloadViewModel();
         BluetoothLive = new BluetoothLiveViewModel();
+        RangeMaker = new RangeMakerViewModel();
 
         UsbDownload.StatusChanged += OnChildStatusChanged;
         BluetoothLive.StatusChanged += OnChildStatusChanged;
+        RangeMaker.StatusChanged += OnChildStatusChanged;
 
         UsbDownload.BarcodeCountChanged += OnBarcodeCountChanged;
         BluetoothLive.BarcodeCountChanged += OnBarcodeCountChanged;
+        RangeMaker.BarcodeCountChanged += OnBarcodeCountChanged;
 
         ToggleThemeCommand = new RelayCommand(_ =>
         {
@@ -52,6 +56,6 @@ public class MainViewModel : ViewModelBase
 
     private void OnBarcodeCountChanged(object? sender, EventArgs e)
     {
-        TotalBarcodeCount = UsbDownload.BarcodeCount + BluetoothLive.BarcodeCount;
+        TotalBarcodeCount = UsbDownload.BarcodeCount + BluetoothLive.BarcodeCount + RangeMaker.BarcodeCount;
     }
 }
