@@ -279,13 +279,13 @@ public class OpticonScannerService : IScannerService
             var packetType = _barCodeDataPacketType
                 ?? _csp2Type.Assembly.GetType("Opticon.csp2+BarCodeDataPacket");
             _barCodeDataPacketType = packetType;
-            LogService.Error($"[OpticonScannerService] BarCodeDataPacket type: {(packetType != null ? packetType.FullName : "NOT FOUND")}, IsValueType={packetType?.IsValueType}");
+            LogService.Debug($"[OpticonScannerService] BarCodeDataPacket type: {(packetType != null ? packetType.FullName : "NOT FOUND")}, IsValueType={packetType?.IsValueType}");
 
             // GetPacket(BarCodeDataPacket& aPacket, Int32 nBarcodeNumber) for each barcode
             var getPacketMethod = packetType != null
                 ? _csp2Type.GetMethod("GetPacket", new Type[] { packetType.MakeByRefType(), typeof(int) })
                 : null;
-            LogService.Error($"[OpticonScannerService] GetPacket method: {(getPacketMethod != null ? "found" : "NOT FOUND")}");
+            LogService.Debug($"[OpticonScannerService] GetPacket method: {(getPacketMethod != null ? "found" : "NOT FOUND")}");
 
             var barcodes = new List<BarcodeEntry>();
 
