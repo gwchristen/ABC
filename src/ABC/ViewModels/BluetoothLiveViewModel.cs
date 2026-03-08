@@ -1,9 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Text;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Threading;
 using ABC.Models;
 using ABC.Services;
 
@@ -25,7 +23,6 @@ public class BluetoothLiveViewModel : ViewModelBase
     private bool _isConnected;
     private bool _showTimestamps = true;
     private bool _isBleMode;
-    private bool _isHidMode;
     private bool _isScanningBle;
     private ObservableCollection<BleDeviceInfo> _bleDevices = new();
     private BleDeviceInfo? _selectedBleDevice;
@@ -34,6 +31,7 @@ public class BluetoothLiveViewModel : ViewModelBase
     private readonly DispatcherTimer _hidTimer;
     private const int HidBufferFlushTimeoutMs = 100;
     private const int ValidBarcodeLength = 17;
+    private const int HidBufferFlushTimeoutMs = 150;
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler? BarcodeCountChanged;
@@ -133,15 +131,13 @@ public class BluetoothLiveViewModel : ViewModelBase
         {
             if (SetProperty(ref _isBleMode, value))
             {
-                if (value)
-                    _isHidMode = false;
                 OnPropertyChanged(nameof(IsSppMode));
-                OnPropertyChanged(nameof(IsHidMode));
                 CommandManager.InvalidateRequerySuggested();
             }
         }
     }
 
+    public bool IsSppMode => !_isBleMode;    public bool IsScanningBle
     public bool IsSppMode => !_isBleMode && !_isHidMode;
 
     public bool IsHidMode
@@ -162,7 +158,10 @@ public class BluetoothLiveViewModel : ViewModelBase
 
     public bool IsHidListening => _bluetoothService.IsHidListening;
 
-    public bool ShowFocusWarning => IsHidListening && !_isWindowFocused;
+    // Raw Input with RIDEV_INPUTSINK captures HID keystrokes even when the
+    // window is in the background, so no focus warning is needed.
+    // The property is retained because the XAML visibility binding uses it.
+    public bool ShowFocusWarning => false;
 
     public bool IsWindowFocused
     {
@@ -207,7 +206,6 @@ public class BluetoothLiveViewModel : ViewModelBase
     public ICommand SaveCommand { get; }
     public ICommand ScanBleCommand { get; }
     public ICommand ConnectBleCommand { get; }
-    public ICommand ToggleHidCommand { get; }
 
     public BluetoothLiveViewModel() : this(new BluetoothScanService(), new FileExportService()) { }
 
@@ -221,9 +219,6 @@ public class BluetoothLiveViewModel : ViewModelBase
 
         _saveDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
-        _hidTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(HidBufferFlushTimeoutMs) };
-        _hidTimer.Tick += OnHidTimerTick;
-
         RefreshPortsCommand = new RelayCommand(_ => RefreshPorts());
         ConnectCommand = new RelayCommand(_ => Connect(), _ => !IsConnected && SelectedPort != null);
         DisconnectCommand = new RelayCommand(_ => Disconnect(), _ => IsConnected);
@@ -233,7 +228,6 @@ public class BluetoothLiveViewModel : ViewModelBase
         SaveCommand = new RelayCommand(async _ => await SaveAsync(), _ => _barcodes.Count > 0);
         ScanBleCommand = new RelayCommand(async _ => await ToggleBleDiscoveryAsync(), _ => !IsConnected);
         ConnectBleCommand = new RelayCommand(async _ => await ConnectBleAsync(), _ => !IsConnected && SelectedBleDevice != null);
-        ToggleHidCommand = new RelayCommand(_ => ToggleHid());
 
         RefreshPorts();
     }
@@ -307,75 +301,6 @@ public class BluetoothLiveViewModel : ViewModelBase
             IsScanningBle = true;
             StatusChanged?.Invoke(this, "Scanning for BLE devices...");
         }
-    }
-
-    private void ToggleHid()
-    {
-        if (_bluetoothService.IsHidListening)
-        {
-            _bluetoothService.StopHidListening();
-            _hidTimer.Stop();
-            _hidBuffer.Clear();
-            StatusChanged?.Invoke(this, "HID listening stopped.");
-        }
-        else
-        {
-            _bluetoothService.StartHidListening();
-            StatusChanged?.Invoke(this, "HID listening started. Scan a barcode...");
-        }
-        OnPropertyChanged(nameof(IsHidListening));
-        OnPropertyChanged(nameof(ShowFocusWarning));
-        CommandManager.InvalidateRequerySuggested();
-    }
-
-    public void ProcessHidText(string text)
-    {
-        if (!_bluetoothService.IsHidListening) return;
-
-        foreach (char c in text)
-        {
-            if (c == '\r' || c == '\n')
-            {
-                FlushHidBuffer();
-            }
-            else
-            {
-                _hidBuffer.Append(c);
-                _hidTimer.Stop();
-                _hidTimer.Start();
-            }
-        }
-    }
-
-    public void ProcessHidKey(Key key)
-    {
-        if (!_bluetoothService.IsHidListening) return;
-
-        if (key == Key.Return || key == Key.Enter)
-            FlushHidBuffer();
-    }
-
-    private void FlushHidBuffer()
-    {
-        _hidTimer.Stop();
-        if (_hidBuffer.Length > 0)
-        {
-            string barcode = _hidBuffer.ToString();
-            _hidBuffer.Clear();
-            var entry = new BarcodeEntry
-            {
-                Barcode = barcode,
-                Timestamp = DateTime.Now,
-                CodeType = "HID",
-                ScannerId = "HID Scanner"
-            };
-            OnBarcodeReceived(null, entry);
-        }
-    }
-
-    private void OnHidTimerTick(object? sender, EventArgs e)
-    {
-        FlushHidBuffer();
     }
 
     private void Disconnect()

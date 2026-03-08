@@ -17,9 +17,4 @@ public interface IBluetoothScanService
     Task<bool> ConnectBleAsync(ulong bluetoothAddress);
     event EventHandler<BleDeviceInfo> BleDeviceDiscovered;
     event EventHandler? Disconnected;
-
-    // HID methods
-    void StartHidListening();
-    void StopHidListening();
-    bool IsHidListening { get; }
 }
