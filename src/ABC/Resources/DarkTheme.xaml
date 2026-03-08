@@ -32,5 +32,6 @@
     <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
     <SolidColorBrush x:Key="AlternatingRowBrush" Color="#3D3D3D" />
     <SolidColorBrush x:Key="DuplicateHighlightBrush" Color="#5C4A00" />
+    <SolidColorBrush x:Key="InvalidLengthHighlightBrush" Color="#5C1A1A" />
 
 </ResourceDictionary>

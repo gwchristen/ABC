@@ -29,6 +29,8 @@ public class BluetoothLiveViewModel : ViewModelBase
     private bool _isWindowFocused = true;
     private readonly StringBuilder _hidBuffer = new();
     private readonly DispatcherTimer _hidTimer;
+    private const int HidBufferFlushTimeoutMs = 100;
+    private const int ValidBarcodeLength = 17;
     private const int HidBufferFlushTimeoutMs = 150;
 
     public event EventHandler<string>? StatusChanged;
@@ -55,6 +57,10 @@ public class BluetoothLiveViewModel : ViewModelBase
     public int DuplicateCount => _barcodes.Count(b => b.IsDuplicate);
 
     public bool HasDuplicates => DuplicateCount > 0;
+
+    public int InvalidLengthCount => _barcodes.Count(b => b.IsInvalidLength);
+
+    public bool HasInvalidLength => InvalidLengthCount > 0;
 
     public string LiveText
     {
@@ -313,6 +319,8 @@ public class BluetoothLiveViewModel : ViewModelBase
         BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
         OnPropertyChanged(nameof(DuplicateCount));
         OnPropertyChanged(nameof(HasDuplicates));
+        OnPropertyChanged(nameof(InvalidLengthCount));
+        OnPropertyChanged(nameof(HasInvalidLength));
     }
 
     private void OnBarcodeReceived(object? sender, BarcodeEntry entry)
@@ -339,6 +347,8 @@ public class BluetoothLiveViewModel : ViewModelBase
 
             _barcodes.Add(entry);
 
+            entry.IsInvalidLength = entry.Barcode.Length != ValidBarcodeLength;
+
             string prefix = isDuplicate ? "[DUP] " : string.Empty;
             string line = ShowTimestamps
                 ? $"[{entry.Timestamp:HH:mm:ss}] {prefix}{entry.Barcode}"
@@ -348,6 +358,8 @@ public class BluetoothLiveViewModel : ViewModelBase
             BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
             OnPropertyChanged(nameof(DuplicateCount));
             OnPropertyChanged(nameof(HasDuplicates));
+            OnPropertyChanged(nameof(InvalidLengthCount));
+            OnPropertyChanged(nameof(HasInvalidLength));
             StatusChanged?.Invoke(this, $"Received barcode: {entry.Barcode} ({_barcodes.Count} total)");
         });
     }
