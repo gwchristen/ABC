@@ -134,7 +134,7 @@ public class RangeMakerViewModel : ViewModelBase
     public int RangeQuantity
     {
         get => _rangeQuantity;
-        set => SetProperty(ref _rangeQuantity, value);
+        set => SetProperty(ref _rangeQuantity, value < 1 ? 1 : value);
     }
 
     public string RangeSizeDisplay
@@ -206,6 +206,7 @@ public class RangeMakerViewModel : ViewModelBase
     public ICommand DetectScannersCommand { get; }
     public ICommand PreviewCommand { get; }
     public ICommand ClearScannerDataCommand { get; }
+    public ICommand DisconnectCommand { get; }
     public ICommand GenerateRangeCommand { get; }
     public ICommand ClearPreviewCommand { get; }
     public ICommand ClearRangeCommand { get; }
@@ -222,15 +223,16 @@ public class RangeMakerViewModel : ViewModelBase
         _scannerService = scannerService;
         _saveDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
-        DetectScannersCommand = new RelayCommand(async _ => await DetectScannersAsync(), _ => !IsBusy);
-        PreviewCommand = new RelayCommand(async _ => await PreviewAsync(), _ => !IsBusy && SelectedPort > 0);
-        ClearScannerDataCommand = new RelayCommand(async _ => await ClearScannerDataAsync(), _ => !IsBusy && IsConnected);
+        DetectScannersCommand = new AsyncRelayCommand(async () => await DetectScannersAsync(), () => !IsBusy);
+        PreviewCommand = new AsyncRelayCommand(async () => await PreviewAsync(), () => !IsBusy && SelectedPort > 0);
+        ClearScannerDataCommand = new AsyncRelayCommand(async () => await ClearScannerDataAsync(), () => !IsBusy && IsConnected);
+        DisconnectCommand = new RelayCommand(_ => Disconnect(), _ => IsConnected);
         GenerateRangeCommand = new RelayCommand(_ => GenerateRange(), _ => !IsBusy);
         ClearPreviewCommand = new RelayCommand(_ => ClearPreview());
         ClearRangeCommand = new RelayCommand(_ => ClearRange());
         BrowseDirectoryCommand = new RelayCommand(_ => BrowseDirectory());
         BrowseAppendFileCommand = new RelayCommand(_ => BrowseAppendFile());
-        SaveCommand = new RelayCommand(async _ => await SaveAsync(), _ => !IsBusy && GeneratedRange.Count > 0);
+        SaveCommand = new AsyncRelayCommand(async () => await SaveAsync(), () => !IsBusy && GeneratedRange.Count > 0);
         RemoveSelectedCommand = new RelayCommand(_ => RemoveSelected(), _ => !IsBusy && SelectedCount > 0);
         ClearSelectionCommand = new RelayCommand(_ => ClearSelection(), _ => SelectedCount > 0);
     }
@@ -239,16 +241,51 @@ public class RangeMakerViewModel : ViewModelBase
     {
         string dllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Opticon.csp2.net.dll");
         bool useOpticon = File.Exists(dllPath);
-        System.Diagnostics.Debug.WriteLine($"[RangeMakerViewModel] Using {(useOpticon ? "OpticonScannerService" : "MockScannerService")}");
+        LogService.Debug("[RangeMakerViewModel] Using {Service}", useOpticon ? "OpticonScannerService" : "MockScannerService");
         if (useOpticon)
             return new OpticonScannerService();
         return new MockScannerService();
+    }
+
+    private void Disconnect()
+    {
+        try
+        {
+            _scannerService.Disconnect();
+            LogService.Info("[RangeMakerViewModel] Disconnected from scanner");
+        }
+        catch (Exception ex)
+        {
+            LogService.Error(ex, "[RangeMakerViewModel] Disconnect failed");
+        }
+        finally
+        {
+            IsConnected = false;
+            ScannerInfo = null;
+            foreach (var b in _barcodes.ToList())
+                UnsubscribeFromBarcode(b);
+            Barcodes.Clear();
+            BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
+            OnPropertyChanged(nameof(IsAllSelected));
+            OnPropertyChanged(nameof(SelectedCount));
+            OnPropertyChanged(nameof(HasSelected));
+            OnPropertyChanged(nameof(RangeSizeDisplay));
+            OnPropertyChanged(nameof(ShowRangeSizeDisplay));
+            StatusChanged?.Invoke(this, "Disconnected from scanner.");
+        }
+    }
+
+    public void Cleanup()
+    {
+        if (IsConnected)
+            Disconnect();
     }
 
     private async Task DetectScannersAsync()
     {
         IsBusy = true;
         StatusChanged?.Invoke(this, "Detecting scanners...");
+        LogService.Info("[RangeMakerViewModel] Detecting scanners");
         try
         {
             var ports = await Task.Run(() => _scannerService.DetectScanners());
@@ -554,12 +591,19 @@ public class RangeMakerViewModel : ViewModelBase
                     : AppendRangeAsText(AppendFilePath, barcodes));
 
                 if (saved)
+                {
+                    LogService.Info("[RangeMakerViewModel] Appended {Count} barcodes to {Path}", _generatedRange.Count, AppendFilePath);
                     StatusChanged?.Invoke(this, $"Appended {_generatedRange.Count} barcode(s) to {AppendFilePath}.");
+                }
                 else
+                {
+                    LogService.Warning("[RangeMakerViewModel] Append failed for {Path}", AppendFilePath);
                     StatusChanged?.Invoke(this, "Failed to save file.");
+                }
             }
             catch (Exception ex)
             {
+                LogService.Error(ex, "[RangeMakerViewModel] Append failed");
                 StatusChanged?.Invoke(this, $"Save failed: {ex.Message}");
             }
             finally
@@ -581,6 +625,20 @@ public class RangeMakerViewModel : ViewModelBase
         string extension = SaveAsCsv ? ".csv" : ".txt";
         string fullPath = Path.Combine(SaveDirectory, FileName + extension);
 
+        if (File.Exists(fullPath))
+        {
+            var confirm = MessageBox.Show(
+                "File already exists. Do you want to overwrite it?",
+                "Confirm Overwrite",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (confirm != MessageBoxResult.Yes)
+            {
+                StatusChanged?.Invoke(this, "Save cancelled.");
+                return;
+            }
+        }
+
         IsBusy = true;
         StatusChanged?.Invoke(this, $"Saving to {fullPath}...");
         try
@@ -591,12 +649,19 @@ public class RangeMakerViewModel : ViewModelBase
                 : SaveRangeAsText(fullPath, barcodes));
 
             if (saved)
+            {
+                LogService.Info("[RangeMakerViewModel] Saved {Count} barcodes to {Path}", _generatedRange.Count, fullPath);
                 StatusChanged?.Invoke(this, $"Saved {_generatedRange.Count} barcode(s) to {fullPath}.");
+            }
             else
+            {
+                LogService.Warning("[RangeMakerViewModel] Save failed for {Path}", fullPath);
                 StatusChanged?.Invoke(this, "Failed to save file.");
+            }
         }
         catch (Exception ex)
         {
+            LogService.Error(ex, "[RangeMakerViewModel] Save failed");
             StatusChanged?.Invoke(this, $"Save failed: {ex.Message}");
         }
         finally

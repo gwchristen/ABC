@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using ABC.Helpers;
 using ABC.Models;
 using ABC.Services;
 
@@ -9,7 +10,6 @@ namespace ABC.ViewModels;
 
 public class UsbDownloadViewModel : ViewModelBase
 {
-    private const int ValidBarcodeLength = 17;
 
     private readonly IScannerService _scannerService;
     private readonly IFileExportService _fileExportService;
@@ -158,6 +158,7 @@ public class UsbDownloadViewModel : ViewModelBase
     public ICommand DetectScannersCommand { get; }
     public ICommand PreviewCommand { get; }
     public ICommand ClearScannerDataCommand { get; }
+    public ICommand DisconnectCommand { get; }
     public ICommand BrowseDirectoryCommand { get; }
     public ICommand BrowseAppendFileCommand { get; }
     public ICommand SaveCommand { get; }
@@ -173,12 +174,13 @@ public class UsbDownloadViewModel : ViewModelBase
 
         _saveDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
-        DetectScannersCommand = new RelayCommand(async _ => await DetectScannersAsync(), _ => !IsBusy);
-        PreviewCommand = new RelayCommand(async _ => await PreviewAsync(), _ => !IsBusy && SelectedPort > 0);
-        ClearScannerDataCommand = new RelayCommand(async _ => await ClearScannerDataAsync(), _ => !IsBusy && IsConnected);
+        DetectScannersCommand = new AsyncRelayCommand(async () => await DetectScannersAsync(), () => !IsBusy);
+        PreviewCommand = new AsyncRelayCommand(async () => await PreviewAsync(), () => !IsBusy && SelectedPort > 0);
+        ClearScannerDataCommand = new AsyncRelayCommand(async () => await ClearScannerDataAsync(), () => !IsBusy && IsConnected);
+        DisconnectCommand = new RelayCommand(_ => Disconnect(), _ => IsConnected);
         BrowseDirectoryCommand = new RelayCommand(_ => BrowseDirectory());
         BrowseAppendFileCommand = new RelayCommand(_ => BrowseAppendFile());
-        SaveCommand = new RelayCommand(async _ => await SaveAsync(), _ => !IsBusy && Barcodes.Count > 0);
+        SaveCommand = new AsyncRelayCommand(async () => await SaveAsync(), () => !IsBusy && Barcodes.Count > 0);
         RemoveSelectedCommand = new RelayCommand(_ => RemoveSelected(), _ => !IsBusy && SelectedCount > 0);
         ClearSelectionCommand = new RelayCommand(_ => ClearSelection(), _ => SelectedCount > 0);
     }
@@ -188,16 +190,53 @@ public class UsbDownloadViewModel : ViewModelBase
         // Use the real service if the Opticon DLL is present, otherwise fall back to mock
         string dllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Opticon.csp2.net.dll");
         bool useOpticon = File.Exists(dllPath);
-        System.Diagnostics.Debug.WriteLine($"[UsbDownloadViewModel] Using {(useOpticon ? "OpticonScannerService" : "MockScannerService")}");
+        LogService.Debug("[UsbDownloadViewModel] Using {Service}", useOpticon ? "OpticonScannerService" : "MockScannerService");
         if (useOpticon)
             return new OpticonScannerService();
         return new MockScannerService();
+    }
+
+    private void Disconnect()
+    {
+        try
+        {
+            _scannerService.Disconnect();
+            LogService.Info("[UsbDownloadViewModel] Disconnected from scanner");
+        }
+        catch (Exception ex)
+        {
+            LogService.Error(ex, "[UsbDownloadViewModel] Disconnect failed");
+        }
+        finally
+        {
+            IsConnected = false;
+            ScannerInfo = null;
+            foreach (var b in _barcodes.ToList())
+                UnsubscribeFromBarcode(b);
+            Barcodes.Clear();
+            BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
+            OnPropertyChanged(nameof(DuplicateCount));
+            OnPropertyChanged(nameof(HasDuplicates));
+            OnPropertyChanged(nameof(InvalidLengthCount));
+            OnPropertyChanged(nameof(HasInvalidLength));
+            OnPropertyChanged(nameof(IsAllSelected));
+            OnPropertyChanged(nameof(SelectedCount));
+            OnPropertyChanged(nameof(HasSelected));
+            StatusChanged?.Invoke(this, "Disconnected from scanner.");
+        }
+    }
+
+    public void Cleanup()
+    {
+        if (IsConnected)
+            Disconnect();
     }
 
     private async Task DetectScannersAsync()
     {
         IsBusy = true;
         StatusChanged?.Invoke(this, "Detecting scanners...");
+        LogService.Info("[UsbDownloadViewModel] Detecting scanners");
         try
         {
             var ports = await Task.Run(() => _scannerService.DetectScanners());
@@ -208,6 +247,7 @@ public class UsbDownloadViewModel : ViewModelBase
             if (ports.Count > 0)
             {
                 SelectedPort = ports[0];
+                LogService.Info("[UsbDownloadViewModel] Found {Count} scanner(s)", ports.Count);
                 StatusChanged?.Invoke(this, $"Found {ports.Count} scanner(s). Selected COM{ports[0]}.");
             }
             else
@@ -215,11 +255,13 @@ public class UsbDownloadViewModel : ViewModelBase
                 string detail = (_scannerService is OpticonScannerService opticon && opticon.LastError != null)
                     ? $"No scanners detected. Detail: {opticon.LastError}"
                     : "No scanners detected.";
+                LogService.Warning("[UsbDownloadViewModel] {Detail}", detail);
                 StatusChanged?.Invoke(this, detail);
             }
         }
         catch (Exception ex)
         {
+            LogService.Error(ex, "[UsbDownloadViewModel] Detection failed");
             StatusChanged?.Invoke(this, $"Detection failed: {ex.Message}");
         }
         finally
@@ -263,7 +305,7 @@ public class UsbDownloadViewModel : ViewModelBase
                 b.IsDuplicate = duplicateValues.Contains(b.Barcode);
 
             foreach (var b in barcodes)
-                b.IsInvalidLength = b.Barcode.Length != ValidBarcodeLength;
+                b.IsInvalidLength = b.Barcode.Length != BarcodeParser.ExpectedLength;
 
             foreach (var b in _barcodes.ToList())
                 UnsubscribeFromBarcode(b);
@@ -403,17 +445,20 @@ public class UsbDownloadViewModel : ViewModelBase
 
                 if (saved)
                 {
+                    LogService.Info("[UsbDownloadViewModel] Appended {Count} barcodes to {Path}", Barcodes.Count, AppendFilePath);
                     StatusChanged?.Invoke(this, $"Appended {Barcodes.Count} barcode(s) to {AppendFilePath}.");
                     if (ClearAfterSave)
                         await ClearScannerDataAsync();
                 }
                 else
                 {
+                    LogService.Warning("[UsbDownloadViewModel] Append failed for {Path}", AppendFilePath);
                     StatusChanged?.Invoke(this, "Failed to save file.");
                 }
             }
             catch (Exception ex)
             {
+                LogService.Error(ex, "[UsbDownloadViewModel] Append failed");
                 StatusChanged?.Invoke(this, $"Save failed: {ex.Message}");
             }
             finally
@@ -435,6 +480,20 @@ public class UsbDownloadViewModel : ViewModelBase
         string extension = SaveAsCsv ? ".csv" : ".txt";
         string fullPath = Path.Combine(SaveDirectory, FileName + extension);
 
+        if (File.Exists(fullPath))
+        {
+            var confirm = MessageBox.Show(
+                "File already exists. Do you want to overwrite it?",
+                "Confirm Overwrite",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (confirm != MessageBoxResult.Yes)
+            {
+                StatusChanged?.Invoke(this, "Save cancelled.");
+                return;
+            }
+        }
+
         IsBusy = true;
         StatusChanged?.Invoke(this, $"Saving to {fullPath}...");
         try
@@ -445,17 +504,20 @@ public class UsbDownloadViewModel : ViewModelBase
 
             if (saved)
             {
+                LogService.Info("[UsbDownloadViewModel] Saved {Count} barcodes to {Path}", Barcodes.Count, fullPath);
                 StatusChanged?.Invoke(this, $"Saved {Barcodes.Count} barcode(s) to {fullPath}.");
                 if (ClearAfterSave)
                     await ClearScannerDataAsync();
             }
             else
             {
+                LogService.Warning("[UsbDownloadViewModel] Save failed for {Path}", fullPath);
                 StatusChanged?.Invoke(this, "Failed to save file.");
             }
         }
         catch (Exception ex)
         {
+            LogService.Error(ex, "[UsbDownloadViewModel] Save failed");
             StatusChanged?.Invoke(this, $"Save failed: {ex.Message}");
         }
         finally
@@ -485,7 +547,7 @@ public class UsbDownloadViewModel : ViewModelBase
             b.IsDuplicate = duplicateValues.Contains(b.Barcode);
 
         foreach (var b in _barcodes)
-            b.IsInvalidLength = b.Barcode.Length != ValidBarcodeLength;
+            b.IsInvalidLength = b.Barcode.Length != BarcodeParser.ExpectedLength;
 
         BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
         OnPropertyChanged(nameof(DuplicateCount));

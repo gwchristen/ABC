@@ -61,4 +61,12 @@ public class MainViewModel : ViewModelBase
     {
         TotalBarcodeCount = UsbDownload.BarcodeCount + BluetoothLive.BarcodeCount + RangeMaker.BarcodeCount;
     }
+
+    public void OnShutdown()
+    {
+        UsbDownload.Cleanup();
+        BluetoothLive.Cleanup();
+        RangeMaker.Cleanup();
+        ScannerSettings.Cleanup();
+    }
 }

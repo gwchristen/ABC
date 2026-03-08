@@ -65,6 +65,13 @@
                             Style="{StaticResource DangerButton}"
                             Command="{Binding ClearScannerDataCommand}"
                             HorizontalAlignment="Stretch"
+                            Margin="0,0,0,4"
+                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}}" />
+
+                    <Button Content="Disconnect"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding DisconnectCommand}"
+                            HorizontalAlignment="Stretch"
                             Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}}" />
                 </StackPanel>
             </Border>

@@ -108,13 +108,25 @@ public class ScannerSettingsViewModel : ViewModelBase
     public string ScannerOnTime
     {
         get => _scannerOnTime;
-        set => SetProperty(ref _scannerOnTime, value);
+        set
+        {
+            if (int.TryParse(value, out int parsed) && parsed >= 1 && parsed <= 255)
+                SetProperty(ref _scannerOnTime, value);
+            else
+                StatusChanged?.Invoke(this, "Scanner On-Time must be a number between 1 and 255.");
+        }
     }
 
     public string MaxBarcodeLength
     {
         get => _maxBarcodeLength;
-        set => SetProperty(ref _maxBarcodeLength, value);
+        set
+        {
+            if (int.TryParse(value, out int parsed) && parsed >= 1 && parsed <= 30)
+                SetProperty(ref _maxBarcodeLength, value);
+            else
+                StatusChanged?.Invoke(this, "Max Barcode Length must be a number between 1 and 30.");
+        }
     }
 
     public bool StoreTimestampEnabled
@@ -130,6 +142,7 @@ public class ScannerSettingsViewModel : ViewModelBase
     // Commands
     public ICommand DetectScannersCommand { get; }
     public ICommand ConnectCommand { get; }
+    public ICommand DisconnectCommand { get; }
     public ICommand ReadAllCommand { get; }
     public ICommand ApplyAllCommand { get; }
     public ICommand ResetDefaultsCommand { get; }
@@ -140,21 +153,47 @@ public class ScannerSettingsViewModel : ViewModelBase
     {
         _scannerService = scannerService;
 
-        DetectScannersCommand = new RelayCommand(async _ => await DetectScannersAsync(), _ => !IsBusy);
-        ConnectCommand = new RelayCommand(async _ => await ConnectAsync(), _ => !IsBusy && SelectedPort > 0);
-        ReadAllCommand = new RelayCommand(async _ => await ReadAllAsync(), _ => !IsBusy && IsConnected);
-        ApplyAllCommand = new RelayCommand(async _ => await ApplyAllAsync(), _ => !IsBusy && IsConnected);
-        ResetDefaultsCommand = new RelayCommand(async _ => await ResetDefaultsAsync(), _ => !IsBusy && IsConnected);
+        DetectScannersCommand = new AsyncRelayCommand(async () => await DetectScannersAsync(), () => !IsBusy);
+        ConnectCommand = new AsyncRelayCommand(async () => await ConnectAsync(), () => !IsBusy && SelectedPort > 0);
+        DisconnectCommand = new RelayCommand(_ => Disconnect(), _ => IsConnected);
+        ReadAllCommand = new AsyncRelayCommand(async () => await ReadAllAsync(), () => !IsBusy && IsConnected);
+        ApplyAllCommand = new AsyncRelayCommand(async () => await ApplyAllAsync(), () => !IsBusy && IsConnected);
+        ResetDefaultsCommand = new AsyncRelayCommand(async () => await ResetDefaultsAsync(), () => !IsBusy && IsConnected);
     }
 
     private static IScannerService CreateDefaultScannerService()
     {
         string dllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Opticon.csp2.net.dll");
         bool useOpticon = File.Exists(dllPath);
-        System.Diagnostics.Debug.WriteLine($"[ScannerSettingsViewModel] Using {(useOpticon ? "OpticonScannerService" : "MockScannerService")}");
+        LogService.Debug("[ScannerSettingsViewModel] Using {Service}", useOpticon ? "OpticonScannerService" : "MockScannerService");
         if (useOpticon)
             return new OpticonScannerService();
         return new MockScannerService();
+    }
+
+    private void Disconnect()
+    {
+        try
+        {
+            _scannerService.Disconnect();
+            LogService.Info("[ScannerSettingsViewModel] Disconnected from scanner");
+        }
+        catch (Exception ex)
+        {
+            LogService.Error(ex, "[ScannerSettingsViewModel] Disconnect failed");
+        }
+        finally
+        {
+            IsConnected = false;
+            ScannerInfo = null;
+            StatusChanged?.Invoke(this, "Disconnected from scanner.");
+        }
+    }
+
+    public void Cleanup()
+    {
+        if (IsConnected)
+            Disconnect();
     }
 
     private async Task DetectScannersAsync()
