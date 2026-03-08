@@ -213,6 +213,12 @@
                            VerticalAlignment="Center"
                            Margin="8,0,0,0"
                            Visibility="{Binding HasDuplicates, Converter={StaticResource BoolToVisibility}}" />
+                <TextBlock Text="{Binding InvalidLengthCount, StringFormat='{}{0} invalid length'}"
+                           Foreground="#D83B01"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="8,0,0,0"
+                           Visibility="{Binding HasInvalidLength, Converter={StaticResource BoolToVisibility}}" />
                 <TextBlock Text="{Binding SelectedCount, StringFormat='{}{0} selected'}"
                            Foreground="{DynamicResource AccentBrush}"
                            FontSize="12"

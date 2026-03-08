@@ -9,6 +9,8 @@ namespace ABC.ViewModels;
 
 public class UsbDownloadViewModel : ViewModelBase
 {
+    private const int ValidBarcodeLength = 17;
+
     private readonly IScannerService _scannerService;
     private readonly IFileExportService _fileExportService;
 
@@ -55,6 +57,10 @@ public class UsbDownloadViewModel : ViewModelBase
     public int DuplicateCount => _barcodes.Count(b => b.IsDuplicate);
 
     public bool HasDuplicates => DuplicateCount > 0;
+
+    public int InvalidLengthCount => _barcodes.Count(b => b.IsInvalidLength);
+
+    public bool HasInvalidLength => InvalidLengthCount > 0;
 
     public int SelectedCount => _barcodes.Count(b => b.IsSelected);
 
@@ -256,6 +262,9 @@ public class UsbDownloadViewModel : ViewModelBase
             foreach (var b in barcodes)
                 b.IsDuplicate = duplicateValues.Contains(b.Barcode);
 
+            foreach (var b in barcodes)
+                b.IsInvalidLength = b.Barcode.Length != ValidBarcodeLength;
+
             foreach (var b in _barcodes.ToList())
                 UnsubscribeFromBarcode(b);
             Barcodes.Clear();
@@ -268,6 +277,8 @@ public class UsbDownloadViewModel : ViewModelBase
             BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
             OnPropertyChanged(nameof(DuplicateCount));
             OnPropertyChanged(nameof(HasDuplicates));
+            OnPropertyChanged(nameof(InvalidLengthCount));
+            OnPropertyChanged(nameof(HasInvalidLength));
             OnPropertyChanged(nameof(IsAllSelected));
             OnPropertyChanged(nameof(SelectedCount));
             OnPropertyChanged(nameof(HasSelected));
@@ -307,6 +318,8 @@ public class UsbDownloadViewModel : ViewModelBase
                 BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
                 OnPropertyChanged(nameof(DuplicateCount));
                 OnPropertyChanged(nameof(HasDuplicates));
+                OnPropertyChanged(nameof(InvalidLengthCount));
+                OnPropertyChanged(nameof(HasInvalidLength));
                 OnPropertyChanged(nameof(IsAllSelected));
                 OnPropertyChanged(nameof(SelectedCount));
                 OnPropertyChanged(nameof(HasSelected));
@@ -471,9 +484,14 @@ public class UsbDownloadViewModel : ViewModelBase
         foreach (var b in _barcodes)
             b.IsDuplicate = duplicateValues.Contains(b.Barcode);
 
+        foreach (var b in _barcodes)
+            b.IsInvalidLength = b.Barcode.Length != ValidBarcodeLength;
+
         BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
         OnPropertyChanged(nameof(DuplicateCount));
         OnPropertyChanged(nameof(HasDuplicates));
+        OnPropertyChanged(nameof(InvalidLengthCount));
+        OnPropertyChanged(nameof(HasInvalidLength));
         OnPropertyChanged(nameof(IsAllSelected));
         OnPropertyChanged(nameof(SelectedCount));
         OnPropertyChanged(nameof(HasSelected));

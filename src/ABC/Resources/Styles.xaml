@@ -274,6 +274,9 @@
     <Style x:Key="DuplicateRowStyle" TargetType="DataGridRow">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Style.Triggers>
+            <DataTrigger Binding="{Binding IsInvalidLength}" Value="True">
+                <Setter Property="Background" Value="{DynamicResource InvalidLengthHighlightBrush}" />
+            </DataTrigger>
             <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
                 <Setter Property="Background" Value="{DynamicResource DuplicateHighlightBrush}" />
             </DataTrigger>
