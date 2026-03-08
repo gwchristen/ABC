@@ -26,6 +26,10 @@ public class BluetoothLiveViewModel : ViewModelBase
     private bool _isScanningBle;
     private ObservableCollection<BleDeviceInfo> _bleDevices = new();
     private BleDeviceInfo? _selectedBleDevice;
+    private bool _isWindowFocused = true;
+    private readonly StringBuilder _hidBuffer = new();
+    private readonly DispatcherTimer _hidTimer;
+    private const int HidBufferFlushTimeoutMs = 150;
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler? BarcodeCountChanged;
@@ -128,6 +132,44 @@ public class BluetoothLiveViewModel : ViewModelBase
     }
 
     public bool IsSppMode => !_isBleMode;    public bool IsScanningBle
+    public bool IsSppMode => !_isBleMode && !_isHidMode;
+
+    public bool IsHidMode
+    {
+        get => _isHidMode;
+        set
+        {
+            if (SetProperty(ref _isHidMode, value))
+            {
+                if (value)
+                    _isBleMode = false;
+                OnPropertyChanged(nameof(IsBleMode));
+                OnPropertyChanged(nameof(IsSppMode));
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+    }
+
+    public bool IsHidListening => _bluetoothService.IsHidListening;
+
+    // Raw Input with RIDEV_INPUTSINK captures HID keystrokes even when the
+    // window is in the background, so no focus warning is needed.
+    // The property is retained because the XAML visibility binding uses it.
+    public bool ShowFocusWarning => false;
+
+    public bool IsWindowFocused
+    {
+        set
+        {
+            if (_isWindowFocused != value)
+            {
+                _isWindowFocused = value;
+                OnPropertyChanged(nameof(ShowFocusWarning));
+            }
+        }
+    }
+
+    public bool IsScanningBle
     {
         get => _isScanningBle;
         private set
