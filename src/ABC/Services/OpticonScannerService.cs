@@ -409,20 +409,80 @@ public class OpticonScannerService : IScannerService
 
     public int GetParam(int paramNumber, byte[] buffer, int length)
     {
-        var result = InvokeStatic("GetParam", paramNumber, buffer, length);
-        return result != null ? (int)result : -1;
+        if (!_isConnected || _csp2Type is null)
+            throw new InvalidOperationException("Scanner is not connected.");
+
+        try
+        {
+            var method = _csp2Type.GetMethod("GetParam", new Type[] { typeof(int), typeof(byte[]), typeof(int) });
+            if (method == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[OpticonScannerService] GetParam method not found");
+                return -1;
+            }
+            var result = (int)(method.Invoke(null, new object[] { paramNumber, buffer, length }) ?? -1);
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetParam({paramNumber}) returned: {result}, buffer[0]={(buffer.Length > 0 ? buffer[0] : (byte)0)}");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] GetParam failed: {ex.GetType().Name}: {ex.Message}");
+            if (ex.InnerException != null)
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+            return -1;
+        }
     }
 
     public int SetParam(int paramNumber, byte[] buffer, int length)
     {
-        var result = InvokeStatic("SetParam", paramNumber, buffer, length);
-        return result != null ? (int)result : -1;
+        if (!_isConnected || _csp2Type is null)
+            throw new InvalidOperationException("Scanner is not connected.");
+
+        try
+        {
+            var method = _csp2Type.GetMethod("SetParam", new Type[] { typeof(int), typeof(byte[]), typeof(int) });
+            if (method == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[OpticonScannerService] SetParam method not found");
+                return -1;
+            }
+            var result = (int)(method.Invoke(null, new object[] { paramNumber, buffer, length }) ?? -1);
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] SetParam({paramNumber}, {(buffer.Length > 0 ? buffer[0] : (byte)0)}) returned: {result}");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] SetParam failed: {ex.GetType().Name}: {ex.Message}");
+            if (ex.InnerException != null)
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+            return -1;
+        }
     }
 
     public int SetDefaults()
     {
-        var result = InvokeStatic("SetDefaults");
-        return result != null ? (int)result : -1;
+        if (!_isConnected || _csp2Type is null)
+            throw new InvalidOperationException("Scanner is not connected.");
+
+        try
+        {
+            var method = _csp2Type.GetMethod("SetDefaults", Type.EmptyTypes);
+            if (method == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[OpticonScannerService] SetDefaults method not found");
+                return -1;
+            }
+            var result = (int)(method.Invoke(null, null) ?? -1);
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] SetDefaults returned: {result}");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[OpticonScannerService] SetDefaults failed: {ex.GetType().Name}: {ex.Message}");
+            if (ex.InnerException != null)
+                System.Diagnostics.Debug.WriteLine($"[OpticonScannerService]   Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+            return -1;
+        }
     }
 
     private object? InvokeStatic(string methodName, params object[] args)
