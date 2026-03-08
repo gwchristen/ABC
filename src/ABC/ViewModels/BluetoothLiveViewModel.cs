@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 using ABC.Models;
 using ABC.Services;
 
@@ -113,8 +115,11 @@ public class BluetoothLiveViewModel : ViewModelBase
         get => _isConnected;
         private set
         {
-            SetProperty(ref _isConnected, value);
-            CommandManager.InvalidateRequerySuggested();
+            if (SetProperty(ref _isConnected, value))
+            {
+                OnPropertyChanged(nameof(IsHidListening));
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
     }
 
@@ -150,12 +155,13 @@ public class BluetoothLiveViewModel : ViewModelBase
                     _isBleMode = false;
                 OnPropertyChanged(nameof(IsBleMode));
                 OnPropertyChanged(nameof(IsSppMode));
+                OnPropertyChanged(nameof(IsHidListening));
                 CommandManager.InvalidateRequerySuggested();
             }
         }
     }
 
-    public bool IsHidListening => _bluetoothService.IsHidListening;
+    public bool IsHidListening => _isHidMode && IsConnected;
 
     // Raw Input with RIDEV_INPUTSINK captures HID keystrokes even when the
     // window is in the background, so no focus warning is needed.
@@ -218,6 +224,9 @@ public class BluetoothLiveViewModel : ViewModelBase
 
         _saveDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
+        _hidTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(HidBufferFlushTimeoutMs) };
+        _hidTimer.Tick += OnHidTimerTick;
+
         RefreshPortsCommand = new RelayCommand(_ => RefreshPorts());
         ConnectCommand = new RelayCommand(_ => Connect(), _ => !IsConnected && SelectedPort != null);
         DisconnectCommand = new RelayCommand(_ => Disconnect(), _ => IsConnected);
@@ -229,6 +238,45 @@ public class BluetoothLiveViewModel : ViewModelBase
         ConnectBleCommand = new RelayCommand(async _ => await ConnectBleAsync(), _ => !IsConnected && SelectedBleDevice != null);
 
         RefreshPorts();
+    }
+
+    public void ProcessHidText(string text)
+    {
+        _hidBuffer.Append(text);
+        _hidTimer.Stop();
+        _hidTimer.Start();
+    }
+
+    public void ProcessHidKey(Key key)
+    {
+        if (key == Key.Return)
+        {
+            _hidTimer.Stop();
+            FlushHidBuffer();
+        }
+    }
+
+    private void OnHidTimerTick(object? sender, EventArgs e)
+    {
+        _hidTimer.Stop();
+        FlushHidBuffer();
+    }
+
+    private void FlushHidBuffer()
+    {
+        string barcode = _hidBuffer.ToString().Trim();
+        _hidBuffer.Clear();
+        if (!string.IsNullOrEmpty(barcode))
+        {
+            var entry = new BarcodeEntry
+            {
+                Barcode = barcode,
+                Timestamp = DateTime.Now,
+                CodeType = string.Empty,
+                ScannerId = string.Empty
+            };
+            OnBarcodeReceived(this, entry);
+        }
     }
 
     private void RefreshPorts()
