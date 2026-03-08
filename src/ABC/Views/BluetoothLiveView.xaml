@@ -299,10 +299,12 @@
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+            <!-- Row 0: Title, counts -->
+            <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
                 <TextBlock Text="Live Scan Feed"
                            Style="{StaticResource SectionHeader}"
                            VerticalAlignment="Center"
@@ -322,14 +324,17 @@
                            VerticalAlignment="Center"
                            Margin="8,0,0,0"
                            Visibility="{Binding HasInvalidLength, Converter={StaticResource BoolToVisibility}}" />
+            </WrapPanel>
+
+            <!-- Row 1: Action buttons -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,4">
                 <Button Content="Clear"
                         Style="{StaticResource SecondaryButton}"
                         Command="{Binding ClearDisplayCommand}"
-                        Padding="8,4" FontSize="12"
-                        Margin="8,0,0,0" />
+                        Padding="8,4" FontSize="12" />
             </StackPanel>
 
-            <Border Grid.Row="1" Style="{StaticResource CardBorder}" Margin="0">
+            <Border Grid.Row="2" Style="{StaticResource CardBorder}" Margin="0">
                 <TextBox Text="{Binding LiveText, Mode=OneWay}"
                          IsReadOnly="True"
                          TextWrapping="NoWrap"
