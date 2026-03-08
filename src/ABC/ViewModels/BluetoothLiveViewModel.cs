@@ -27,9 +27,9 @@ public class BluetoothLiveViewModel : ViewModelBase
     private ObservableCollection<BleDeviceInfo> _bleDevices = new();
     private BleDeviceInfo? _selectedBleDevice;
     private bool _isWindowFocused = true;
+    private bool _isHidMode;
     private readonly StringBuilder _hidBuffer = new();
     private readonly DispatcherTimer _hidTimer;
-    private const int HidBufferFlushTimeoutMs = 100;
     private const int ValidBarcodeLength = 17;
     private const int HidBufferFlushTimeoutMs = 150;
 
@@ -137,7 +137,6 @@ public class BluetoothLiveViewModel : ViewModelBase
         }
     }
 
-    public bool IsSppMode => !_isBleMode;    public bool IsScanningBle
     public bool IsSppMode => !_isBleMode && !_isHidMode;
 
     public bool IsHidMode
