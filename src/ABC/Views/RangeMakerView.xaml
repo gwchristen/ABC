@@ -42,7 +42,8 @@
                                   Style="{StaticResource ModernComboBox}"
                                   ItemsSource="{Binding AvailablePorts}"
                                   SelectedItem="{Binding SelectedPort}"
-                                  IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
+                                  IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}"
+                                  ToolTip="Select the COM port for the connected scanner">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding StringFormat='COM {0}'}" />
@@ -52,27 +53,31 @@
                         <Button Grid.Column="2"
                                 Content="Detect"
                                 Style="{StaticResource SecondaryButton}"
-                                Command="{Binding DetectScannersCommand}" />
+                                Command="{Binding DetectScannersCommand}"
+                                ToolTip="Scan USB ports for connected Opticon scanners" />
                     </Grid>
 
                     <Button Content="Preview / Download"
                             Style="{StaticResource AccentButton}"
                             Command="{Binding PreviewCommand}"
                             HorizontalAlignment="Stretch"
-                            Margin="0,0,0,4" />
+                            Margin="0,0,0,4"
+                            ToolTip="Connect to the selected scanner and download stored barcodes" />
 
                     <Button Content="Clear Scanner Data"
                             Style="{StaticResource DangerButton}"
                             Command="{Binding ClearScannerDataCommand}"
                             HorizontalAlignment="Stretch"
                             Margin="0,0,0,4"
-                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}}" />
+                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}}"
+                            ToolTip="Permanently erase all barcode data from the scanner's memory" />
 
                     <Button Content="Disconnect"
                             Style="{StaticResource SecondaryButton}"
                             Command="{Binding DisconnectCommand}"
                             HorizontalAlignment="Stretch"
-                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}}" />
+                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}}"
+                            ToolTip="Disconnect from the scanner and release the COM port" />
                 </StackPanel>
             </Border>
 
@@ -126,11 +131,13 @@
                     <RadioButton Content="First barcode only"
                                  IsChecked="{Binding IsFirstOnlyMode}"
                                  Margin="0,0,0,6"
-                                 VerticalAlignment="Center" />
+                                 VerticalAlignment="Center"
+                                 ToolTip="Generate a sequential range starting from one selected barcode" />
                     <RadioButton Content="First + Last barcode"
                                  IsChecked="{Binding IsFirstLastMode}"
                                  Margin="0,0,0,8"
-                                 VerticalAlignment="Center" />
+                                 VerticalAlignment="Center"
+                                 ToolTip="Generate all barcodes between two selected barcodes" />
 
                     <!-- Quantity input — visible in First Only mode -->
                     <StackPanel Visibility="{Binding IsFirstOnlyMode, Converter={StaticResource BoolToVisibility}}"
@@ -141,7 +148,8 @@
                                    Margin="0,0,8,0" />
                         <TextBox Style="{StaticResource ModernTextBox}"
                                  Text="{Binding RangeQuantity, UpdateSourceTrigger=PropertyChanged}"
-                                 Width="80" />
+                                 Width="80"
+                                 ToolTip="Number of sequential barcodes to generate starting from the selected barcode" />
                     </StackPanel>
 
                     <!-- Range size display — visible in First+Last mode with exactly 2 selected -->
@@ -153,7 +161,8 @@
                     <Button Content="Generate Range"
                             Style="{StaticResource AccentButton}"
                             Command="{Binding GenerateRangeCommand}"
-                            HorizontalAlignment="Stretch" />
+                            HorizontalAlignment="Stretch"
+                            ToolTip="Create the barcode range based on selected barcodes and options" />
                 </StackPanel>
             </Border>
 
@@ -172,7 +181,8 @@
                         </Grid.ColumnDefinitions>
                         <TextBox Grid.Column="0"
                                  Style="{StaticResource ModernTextBox}"
-                                 Text="{Binding SaveDirectory, UpdateSourceTrigger=PropertyChanged}" />
+                                 Text="{Binding SaveDirectory, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Folder where the file will be saved" />
                         <Button Grid.Column="2"
                                 Content="..."
                                 Style="{StaticResource SecondaryButton}"
@@ -184,21 +194,25 @@
                     <TextBlock Text="Filename:" Style="{StaticResource InfoLabel}" Margin="0,0,0,4" />
                     <TextBox Style="{StaticResource ModernTextBox}"
                              Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}"
-                             Margin="0,0,0,8" />
+                             Margin="0,0,0,8"
+                             ToolTip="Name for the saved file (without extension)" />
 
                     <!-- Format -->
                     <TextBlock Text="Format:" Style="{StaticResource InfoLabel}" Margin="0,0,0,4" />
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <RadioButton Content=".txt" IsChecked="{Binding SaveAsCsv, Converter={StaticResource InverseBool}}"
-                                     Margin="0,0,12,0" VerticalAlignment="Center" />
+                                     Margin="0,0,12,0" VerticalAlignment="Center"
+                                     ToolTip="Save as plain text with one barcode per line" />
                         <RadioButton Content=".csv" IsChecked="{Binding SaveAsCsv}"
-                                     VerticalAlignment="Center" />
+                                     VerticalAlignment="Center"
+                                     ToolTip="Save in comma-separated format for spreadsheet import" />
                     </StackPanel>
 
                     <!-- Append to file -->
                     <CheckBox Content="Append to file"
                               IsChecked="{Binding AppendToFile}"
-                              Margin="0,0,0,8" />
+                              Margin="0,0,0,8"
+                              ToolTip="Add barcodes to the end of an existing file instead of creating a new one" />
 
                     <!-- Append file picker -->
                     <StackPanel Visibility="{Binding AppendToFile, Converter={StaticResource BoolToVisibility}}"
@@ -218,7 +232,8 @@
                                     Content="Browse..."
                                     Command="{Binding BrowseAppendFileCommand}"
                                     Style="{StaticResource SecondaryButton}"
-                                    Margin="8,0,0,0" />
+                                    Margin="8,0,0,0"
+                                    ToolTip="Select the existing file to append barcodes to" />
                         </Grid>
                     </StackPanel>
 
@@ -275,7 +290,8 @@
                         Style="{StaticResource DangerButton}"
                         Command="{Binding ClearPreviewCommand}"
                         Margin="4,0,0,0"
-                        VerticalAlignment="Center" />
+                        VerticalAlignment="Center"
+                        ToolTip="Clear the downloaded barcode preview list" />
             </StackPanel>
 
             <Border Grid.Row="2" Style="{StaticResource CardBorder}" Margin="0">
@@ -340,7 +356,8 @@
                 <Button Content="Clear Range"
                         Style="{StaticResource DangerButton}"
                         Command="{Binding ClearRangeCommand}"
-                        VerticalAlignment="Center" />
+                        VerticalAlignment="Center"
+                        ToolTip="Clear the generated barcode range list" />
             </StackPanel>
 
             <Border Grid.Row="2" Style="{StaticResource CardBorder}" Margin="0">

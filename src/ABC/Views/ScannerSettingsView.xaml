@@ -40,7 +40,8 @@
                                   Style="{StaticResource ModernComboBox}"
                                   ItemsSource="{Binding AvailablePorts}"
                                   SelectedItem="{Binding SelectedPort}"
-                                  IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
+                                  IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}"
+                                  ToolTip="Select the COM port for the connected scanner">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding StringFormat='COM {0}'}" />
@@ -50,20 +51,23 @@
                         <Button Grid.Column="2"
                                 Content="Detect"
                                 Style="{StaticResource SecondaryButton}"
-                                Command="{Binding DetectScannersCommand}" />
+                                Command="{Binding DetectScannersCommand}"
+                                ToolTip="Scan USB ports for connected Opticon scanners" />
                     </Grid>
 
                     <Button Content="Connect"
                             Style="{StaticResource AccentButton}"
                             Command="{Binding ConnectCommand}"
                             HorizontalAlignment="Stretch"
-                            Margin="0,0,0,4" />
+                            Margin="0,0,0,4"
+                            ToolTip="Connect to the scanner on the selected COM port" />
 
                     <Button Content="Disconnect"
                             Style="{StaticResource SecondaryButton}"
                             Command="{Binding DisconnectCommand}"
                             HorizontalAlignment="Stretch"
-                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}}" />
+                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}}"
+                            ToolTip="Disconnect from the scanner and release the COM port" />
                 </StackPanel>
             </Border>
 
@@ -136,14 +140,17 @@
                 <Button Content="Read All"
                         Style="{StaticResource SecondaryButton}"
                         Command="{Binding ReadAllCommand}"
-                        Margin="0,0,4,0" />
+                        Margin="0,0,4,0"
+                        ToolTip="Read all current parameter values from the scanner" />
                 <Button Content="Apply All"
                         Style="{StaticResource AccentButton}"
                         Command="{Binding ApplyAllCommand}"
-                        Margin="0,0,4,0" />
+                        Margin="0,0,4,0"
+                        ToolTip="Write all parameter values to the scanner" />
                 <Button Content="Reset to Defaults"
                         Style="{StaticResource DangerButton}"
-                        Command="{Binding ResetDefaultsCommand}" />
+                        Command="{Binding ResetDefaultsCommand}"
+                        ToolTip="Reset all scanner parameters to factory default values" />
             </StackPanel>
 
             <!-- Not connected message -->
@@ -170,7 +177,8 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="Buzzer:" Style="{StaticResource InfoLabel}" VerticalAlignment="Center" />
                         <CheckBox Grid.Column="1" IsChecked="{Binding BuzzerEnabled}" VerticalAlignment="Center"
-                                  Content="Enable beep on scan" />
+                                  Content="Enable beep on scan"
+                                  ToolTip="Enable or disable the scanner's audible beep on successful scan" />
                     </Grid>
 
                     <!-- Param 10: Host Connect Beep -->
@@ -181,7 +189,8 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="Host Connect Beep:" Style="{StaticResource InfoLabel}" VerticalAlignment="Center" />
                         <CheckBox Grid.Column="1" IsChecked="{Binding HostConnectBeepEnabled}" VerticalAlignment="Center"
-                                  Content="Beep when connected to host" />
+                                  Content="Beep when connected to host"
+                                  ToolTip="Beep when the scanner connects to the host computer" />
                     </Grid>
 
                     <!-- Param 11: Host Complete Beep -->
@@ -192,7 +201,8 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="Host Complete Beep:" Style="{StaticResource InfoLabel}" VerticalAlignment="Center" />
                         <CheckBox Grid.Column="1" IsChecked="{Binding HostCompleteBeepEnabled}" VerticalAlignment="Center"
-                                  Content="Beep on upload complete" />
+                                  Content="Beep on upload complete"
+                                  ToolTip="Beep when data transfer to the host is complete" />
                     </Grid>
 
                     <!-- Param 35: Store RTC Timestamp -->
@@ -203,7 +213,8 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="Store RTC Timestamp:" Style="{StaticResource InfoLabel}" VerticalAlignment="Center" />
                         <CheckBox Grid.Column="1" IsChecked="{Binding StoreTimestampEnabled}" VerticalAlignment="Center"
-                                  Content="Store timestamp with each scan" />
+                                  Content="Store timestamp with each scan"
+                                  ToolTip="Record the date and time each barcode was scanned" />
                     </Grid>
 
                     <Separator Margin="0,4,0,12" Background="{DynamicResource BorderBrush}" />
@@ -218,7 +229,8 @@
                         <ComboBox Grid.Column="1"
                                   Style="{StaticResource ModernComboBox}"
                                   ItemsSource="{Binding RejectRedundantOptions}"
-                                  SelectedIndex="{Binding RejectRedundantIndex}" />
+                                  SelectedIndex="{Binding RejectRedundantIndex}"
+                                  ToolTip="Control whether the scanner rejects duplicate barcode scans" />
                     </Grid>
 
                     <!-- Param 7: Low-Battery Indication -->
@@ -231,7 +243,8 @@
                         <ComboBox Grid.Column="1"
                                   Style="{StaticResource ModernComboBox}"
                                   ItemsSource="{Binding LowBatteryOptions}"
-                                  SelectedIndex="{Binding LowBatteryIndex}" />
+                                  SelectedIndex="{Binding LowBatteryIndex}"
+                                  ToolTip="Configure how the scanner alerts when battery is low" />
                     </Grid>
 
                     <Separator Margin="0,4,0,12" Background="{DynamicResource BorderBrush}" />
@@ -246,7 +259,8 @@
                         <TextBlock Grid.Column="0" Text="Scanner On-Time:" Style="{StaticResource InfoLabel}" VerticalAlignment="Center" />
                         <TextBox Grid.Column="1"
                                  Style="{StaticResource ModernTextBox}"
-                                 Text="{Binding ScannerOnTime, UpdateSourceTrigger=PropertyChanged}" />
+                                 Text="{Binding ScannerOnTime, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="How long the scanner stays active before auto-sleep (1–255 seconds)" />
                         <TextBlock Grid.Column="2" Text="(1–255 seconds)" Style="{StaticResource InfoLabel}" VerticalAlignment="Center" Margin="8,0,0,0" />
                     </Grid>
 
@@ -260,7 +274,8 @@
                         <TextBlock Grid.Column="0" Text="Max Barcode Length:" Style="{StaticResource InfoLabel}" VerticalAlignment="Center" />
                         <TextBox Grid.Column="1"
                                  Style="{StaticResource ModernTextBox}"
-                                 Text="{Binding MaxBarcodeLength, UpdateSourceTrigger=PropertyChanged}" />
+                                 Text="{Binding MaxBarcodeLength, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Maximum number of characters accepted per barcode (1–30)" />
                         <TextBlock Grid.Column="2" Text="(1–30 characters)" Style="{StaticResource InfoLabel}" VerticalAlignment="Center" Margin="8,0,0,0" />
                     </Grid>
 

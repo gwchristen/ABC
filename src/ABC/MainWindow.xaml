@@ -64,7 +64,8 @@
             </StatusBarItem>
             <Separator />
             <StatusBarItem HorizontalAlignment="Right">
-                <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal"
+                            ToolTip="Total number of barcodes across all tabs">
                     <TextBlock Text="Barcodes: " Foreground="{DynamicResource StatusBarForeground}" />
                     <TextBlock Text="{Binding TotalBarcodeCount}" Foreground="{DynamicResource StatusBarForeground}" />
                 </StackPanel>
