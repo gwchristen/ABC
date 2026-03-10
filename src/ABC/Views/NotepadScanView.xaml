@@ -1,0 +1,183 @@
+<UserControl x:Class="ABC.Views.NotepadScanView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:converters="clr-namespace:ABC.Converters"
+             xmlns:vm="clr-namespace:ABC.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:NotepadScanViewModel}"
+             Background="{DynamicResource WindowBackground}">
+
+    <UserControl.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+        <converters:InverseBoolConverter x:Key="InverseBool" />
+    </UserControl.Resources>
+
+    <Grid Margin="8">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="8" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ===== Left Panel ===== -->
+        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+
+            <!-- How to Use Card -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="How to Use" Style="{StaticResource SectionHeader}" />
+                    <TextBlock Text="1. Click in the text area on the right"
+                               Style="{StaticResource InfoLabel}" Margin="0,0,0,4" TextWrapping="Wrap" />
+                    <TextBlock Text="2. Scan barcodes with your HID scanner"
+                               Style="{StaticResource InfoLabel}" Margin="0,0,0,4" TextWrapping="Wrap" />
+                    <TextBlock Text="3. Each scan appears as a new line"
+                               Style="{StaticResource InfoLabel}" Margin="0,0,0,4" TextWrapping="Wrap" />
+                    <TextBlock Text="4. Save when done"
+                               Style="{StaticResource InfoLabel}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <!-- Save Options Card -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="Save Options" Style="{StaticResource SectionHeader}" />
+
+                    <!-- Directory -->
+                    <TextBlock Text="Directory:" Style="{StaticResource InfoLabel}" Margin="0,0,0,4" />
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="4" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0"
+                                 Style="{StaticResource ModernTextBox}"
+                                 Text="{Binding SaveDirectory, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Folder where the file will be saved" />
+                        <Button Grid.Column="2"
+                                Content="..."
+                                Style="{StaticResource SecondaryButton}"
+                                Command="{Binding BrowseDirectoryCommand}"
+                                MinWidth="36" Padding="8,6" />
+                    </Grid>
+
+                    <!-- Filename -->
+                    <TextBlock Text="Filename:" Style="{StaticResource InfoLabel}" Margin="0,0,0,4" />
+                    <TextBox Style="{StaticResource ModernTextBox}"
+                             Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}"
+                             Margin="0,0,0,8"
+                             ToolTip="Name for the saved file (without extension)" />
+
+                    <!-- Format -->
+                    <TextBlock Text="Format:" Style="{StaticResource InfoLabel}" Margin="0,0,0,4" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <RadioButton Content=".txt" IsChecked="{Binding SaveAsCsv, Converter={StaticResource InverseBool}}"
+                                     Margin="0,0,12,0" VerticalAlignment="Center"
+                                     ToolTip="Save as plain text with one barcode per line" />
+                        <RadioButton Content=".csv" IsChecked="{Binding SaveAsCsv}"
+                                     VerticalAlignment="Center"
+                                     ToolTip="Save in comma-separated format for spreadsheet import" />
+                    </StackPanel>
+
+                    <!-- Append to file -->
+                    <CheckBox Content="Append to file"
+                              IsChecked="{Binding AppendToFile}"
+                              Margin="0,0,0,8"
+                              ToolTip="Add barcodes to the end of an existing file instead of creating a new one" />
+
+                    <!-- Append file picker - visible only when AppendToFile is checked -->
+                    <StackPanel Visibility="{Binding AppendToFile, Converter={StaticResource BoolToVisibility}}"
+                                Margin="0,4,0,8">
+                        <TextBlock Text="Append to:" Style="{StaticResource InfoLabel}" Margin="0,0,0,4" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0"
+                                     Text="{Binding AppendFileName, Mode=OneWay}"
+                                     Style="{StaticResource ModernTextBox}"
+                                     IsReadOnly="True"
+                                     ToolTip="{Binding AppendFilePath}" />
+                            <Button Grid.Column="1"
+                                    Content="Browse..."
+                                    Command="{Binding BrowseAppendFileCommand}"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Margin="8,0,0,0"
+                                    ToolTip="Select the existing file to append barcodes to" />
+                        </Grid>
+                    </StackPanel>
+
+                    <Button Content="Save"
+                            Style="{StaticResource AccentButton}"
+                            Command="{Binding SaveCommand}"
+                            HorizontalAlignment="Stretch" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+        </ScrollViewer>
+
+        <!-- Splitter -->
+        <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"
+                      Background="{DynamicResource BorderBrush}" />
+
+        <!-- ===== Right Panel: Notepad Area ===== -->
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Row 0: Title, counts -->
+            <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
+                <TextBlock Text="Notepad Scanner"
+                           Style="{StaticResource SectionHeader}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,12,0" />
+                <TextBlock Text="{Binding LineCount, StringFormat='{}{0} line(s)'}"
+                           Style="{StaticResource InfoLabel}"
+                           VerticalAlignment="Center" />
+                <TextBlock Text="{Binding DuplicateCount, StringFormat='{}{0} duplicate(s)'}"
+                           Foreground="{DynamicResource WarningBrush}"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="8,0,0,0"
+                           Visibility="{Binding HasDuplicates, Converter={StaticResource BoolToVisibility}}" />
+                <TextBlock Text="{Binding InvalidLengthCount, StringFormat='{}{0} invalid length'}"
+                           Foreground="#D83B01"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="8,0,0,0"
+                           Visibility="{Binding HasInvalidLength, Converter={StaticResource BoolToVisibility}}" />
+            </WrapPanel>
+
+            <!-- Row 1: Action buttons -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,4">
+                <Button Content="Clear"
+                        Style="{StaticResource SecondaryButton}"
+                        Command="{Binding ClearCommand}"
+                        Padding="8,4" FontSize="12" />
+            </StackPanel>
+
+            <!-- Row 2: Notepad TextBox -->
+            <Border Grid.Row="2" Style="{StaticResource CardBorder}" Margin="0">
+                <TextBox Text="{Binding NotepadText, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True"
+                         TextWrapping="NoWrap"
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Auto"
+                         FontFamily="Consolas, Courier New"
+                         FontSize="13"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Padding="4"
+                         SpellCheck.IsEnabled="False" />
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
