@@ -34,6 +34,7 @@ public class BarcodeEntry : INotifyPropertyChanged
             if (_isDuplicate == value) return;
             _isDuplicate = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsDuplicate)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(StatusText)));
         }
     }
 
@@ -45,8 +46,17 @@ public class BarcodeEntry : INotifyPropertyChanged
             if (_isInvalidLength == value) return;
             _isInvalidLength = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsInvalidLength)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(StatusText)));
         }
     }
+
+    public string StatusText => (_isDuplicate, _isInvalidLength) switch
+    {
+        (true, true) => "Dup! Bad Len",
+        (true, false) => "Dup!",
+        (false, true) => "Bad Len",
+        _ => "OK!"
+    };
 
     public bool IsSelected
     {
