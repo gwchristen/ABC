@@ -190,6 +190,28 @@ public class ScannerSettingsViewModel : ViewModelBase
         }
     }
 
+    public void HandleDeviceRemoved()
+    {
+        if (!IsConnected) return;
+
+        try
+        {
+            var availablePorts = System.IO.Ports.SerialPort.GetPortNames();
+            string ourPort = $"COM{SelectedPort}";
+
+            if (!availablePorts.Contains(ourPort))
+            {
+                LogService.Warning("[ScannerSettingsViewModel] COM port {Port} disappeared - scanner was unplugged", ourPort);
+                Disconnect();
+                StatusChanged?.Invoke(this, $"Scanner disconnected - {ourPort} was removed.");
+            }
+        }
+        catch (Exception ex)
+        {
+            LogService.Error(ex, "[ScannerSettingsViewModel] Error checking COM port after device removal");
+        }
+    }
+
     public void Cleanup()
     {
         if (IsConnected)
