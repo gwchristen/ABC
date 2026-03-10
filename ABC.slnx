@@ -1,11 +1,8 @@
 <Solution>
   <Configurations>
     <Platform Name="Any CPU" />
-    <Platform Name="x86" />
   </Configurations>
   <Folder Name="/src/">
-    <Project Path="src/ABC/ABC.csproj">
-      <Platform Solution="*|x86" Project="x86" />
-    </Project>
+    <Project Path="src/ABC/ABC.csproj" />
   </Folder>
 </Solution>
