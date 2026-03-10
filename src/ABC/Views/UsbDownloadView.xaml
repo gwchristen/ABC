@@ -298,7 +298,8 @@
                         <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="*" />
                         <DataGridTextColumn Header="Code Type" Binding="{Binding CodeType}" Width="100" />
                         <DataGridTextColumn Header="Timestamp" Binding="{Binding Timestamp, StringFormat='yyyy-MM-dd HH:mm:ss'}" Width="160" />
-                        <DataGridTextColumn Header="Scanner ID" Binding="{Binding ScannerId}" Width="120" />
+                        <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="100"
+                                            ToolTip="OK! = Valid barcode, Dup! = Duplicate, Bad Len = Invalid length" />
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>
