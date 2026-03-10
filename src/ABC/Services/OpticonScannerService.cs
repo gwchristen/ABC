@@ -1,4 +1,6 @@
 using System.IO;
+using System.Runtime.ExceptionServices;
+using System.Security;
 using System.Text;
 using ABC.Models;
 
@@ -116,14 +118,22 @@ public class OpticonScannerService : IScannerService
         }
     }
 
+    [HandleProcessCorruptedStateExceptions]
+    [SecurityCritical]
     public void Disconnect()
     {
         LogService.Debug("[OpticonScannerService] Disconnect");
         try
         {
-            // Restore() - no-parameter overload
-            var restoreMethod = _csp2Type?.GetMethod("Restore", Type.EmptyTypes);
-            restoreMethod?.Invoke(null, null);
+            if (_isConnected && _csp2Type != null)
+            {
+                var restoreMethod = _csp2Type.GetMethod("Restore", Type.EmptyTypes);
+                restoreMethod?.Invoke(null, null);
+            }
+        }
+        catch (AccessViolationException ave)
+        {
+            LogService.Error($"[OpticonScannerService] Disconnect encountered AccessViolationException (native DLL memory error): {ave.Message}");
         }
         catch (Exception ex)
         {
