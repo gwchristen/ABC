@@ -10,6 +10,7 @@ public class MainViewModel : ViewModelBase
 
     public UsbDownloadViewModel UsbDownload { get; }
     public BluetoothLiveViewModel BluetoothLive { get; }
+    public NotepadScanViewModel NotepadScan { get; }
     public RangeMakerViewModel RangeMaker { get; }
     public ScannerSettingsViewModel ScannerSettings { get; }
 
@@ -33,16 +34,19 @@ public class MainViewModel : ViewModelBase
     {
         UsbDownload = new UsbDownloadViewModel();
         BluetoothLive = new BluetoothLiveViewModel();
+        NotepadScan = new NotepadScanViewModel();
         RangeMaker = new RangeMakerViewModel();
         ScannerSettings = new ScannerSettingsViewModel();
 
         UsbDownload.StatusChanged += OnChildStatusChanged;
         BluetoothLive.StatusChanged += OnChildStatusChanged;
+        NotepadScan.StatusChanged += OnChildStatusChanged;
         RangeMaker.StatusChanged += OnChildStatusChanged;
         ScannerSettings.StatusChanged += OnChildStatusChanged;
 
         UsbDownload.BarcodeCountChanged += OnBarcodeCountChanged;
         BluetoothLive.BarcodeCountChanged += OnBarcodeCountChanged;
+        NotepadScan.BarcodeCountChanged += OnBarcodeCountChanged;
         RangeMaker.BarcodeCountChanged += OnBarcodeCountChanged;
 
         ToggleThemeCommand = new RelayCommand(_ =>
@@ -59,7 +63,7 @@ public class MainViewModel : ViewModelBase
 
     private void OnBarcodeCountChanged(object? sender, EventArgs e)
     {
-        TotalBarcodeCount = UsbDownload.BarcodeCount + BluetoothLive.BarcodeCount + RangeMaker.BarcodeCount;
+        TotalBarcodeCount = UsbDownload.BarcodeCount + BluetoothLive.BarcodeCount + NotepadScan.BarcodeCount + RangeMaker.BarcodeCount;
     }
 
     public void OnUsbDeviceRemoved()
@@ -86,6 +90,7 @@ public class MainViewModel : ViewModelBase
     {
         UsbDownload.Cleanup();
         BluetoothLive.Cleanup();
+        NotepadScan.Cleanup();
         RangeMaker.Cleanup();
         ScannerSettings.Cleanup();
     }
