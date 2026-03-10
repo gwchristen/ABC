@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows.Input;
 using ABC.Helpers;
@@ -10,7 +11,8 @@ public class NotepadScanViewModel : ViewModelBase
 {
     private readonly IFileExportService _fileExportService;
 
-    private string _notepadText = string.Empty;
+    private ObservableCollection<BarcodeEntry> _barcodes = new();
+    private string _scanInput = string.Empty;
     private string _saveDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
     private string _fileName = GenerateDefaultFileName();
     private bool _saveAsCsv;
@@ -20,47 +22,54 @@ public class NotepadScanViewModel : ViewModelBase
     public event EventHandler<string>? StatusChanged;
     public event EventHandler? BarcodeCountChanged;
 
-    public string NotepadText
+    public ObservableCollection<BarcodeEntry> Barcodes
     {
-        get => _notepadText;
-        set
-        {
-            if (SetProperty(ref _notepadText, value))
-            {
-                OnPropertyChanged(nameof(LineCount));
-                OnPropertyChanged(nameof(BarcodeCount));
-                OnPropertyChanged(nameof(DuplicateCount));
-                OnPropertyChanged(nameof(HasDuplicates));
-                OnPropertyChanged(nameof(InvalidLengthCount));
-                OnPropertyChanged(nameof(HasInvalidLength));
-                BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
+        get => _barcodes;
+        private set => SetProperty(ref _barcodes, value);
     }
 
-    public int LineCount => GetNonEmptyLines().Count;
-
-    public int BarcodeCount => LineCount;
-
-    public int DuplicateCount
+    public string ScanInput
     {
-        get
-        {
-            var lines = GetNonEmptyLines();
-            return lines.GroupBy(l => l, StringComparer.Ordinal)
-                        .Count(g => g.Count() > 1) > 0
-                ? lines.Count - lines.Distinct(StringComparer.Ordinal).Count()
-                : 0;
-        }
+        get => _scanInput;
+        set => SetProperty(ref _scanInput, value);
     }
+
+    public int BarcodeCount => _barcodes.Count;
+
+    public int DuplicateCount => _barcodes.Count(b => b.IsDuplicate);
 
     public bool HasDuplicates => DuplicateCount > 0;
 
-    public int InvalidLengthCount =>
-        GetNonEmptyLines().Count(l => l.Length != BarcodeParser.ExpectedLength);
+    public int InvalidLengthCount => _barcodes.Count(b => b.IsInvalidLength);
 
     public bool HasInvalidLength => InvalidLengthCount > 0;
+
+    public int SelectedCount => _barcodes.Count(b => b.IsSelected);
+
+    public bool HasSelected => SelectedCount > 0;
+
+    public bool? IsAllSelected
+    {
+        get
+        {
+            if (_barcodes.Count == 0) return false;
+            int selected = _barcodes.Count(b => b.IsSelected);
+            if (selected == 0) return false;
+            if (selected == _barcodes.Count) return true;
+            return null;
+        }
+        set
+        {
+            if (value == null) return;
+            bool newValue = value.Value;
+            foreach (var b in _barcodes)
+                b.IsSelected = newValue;
+            OnPropertyChanged(nameof(IsAllSelected));
+            OnPropertyChanged(nameof(SelectedCount));
+            OnPropertyChanged(nameof(HasSelected));
+            CommandManager.InvalidateRequerySuggested();
+        }
+    }
 
     public string SaveDirectory
     {
@@ -102,6 +111,8 @@ public class NotepadScanViewModel : ViewModelBase
     public ICommand BrowseDirectoryCommand { get; }
     public ICommand BrowseAppendFileCommand { get; }
     public ICommand SaveCommand { get; }
+    public ICommand RemoveSelectedCommand { get; }
+    public ICommand ClearSelectionCommand { get; }
 
     public NotepadScanViewModel() : this(new FileExportService()) { }
 
@@ -109,20 +120,126 @@ public class NotepadScanViewModel : ViewModelBase
     {
         _fileExportService = fileExportService;
 
-        ClearCommand = new RelayCommand(_ => NotepadText = string.Empty);
+        ClearCommand = new RelayCommand(_ => ClearAll());
         BrowseDirectoryCommand = new RelayCommand(_ => BrowseDirectory());
         BrowseAppendFileCommand = new RelayCommand(_ => BrowseAppendFile());
-        SaveCommand = new AsyncRelayCommand(async () => await SaveAsync(), () => LineCount > 0);
+        SaveCommand = new AsyncRelayCommand(async () => await SaveAsync(), () => _barcodes.Count > 0);
+        RemoveSelectedCommand = new RelayCommand(_ => RemoveSelected(), _ => SelectedCount > 0);
+        ClearSelectionCommand = new RelayCommand(_ => ClearSelection(), _ => SelectedCount > 0);
     }
 
     public void Cleanup() { }
 
-    private List<string> GetNonEmptyLines()
-        => _notepadText
-            .Split('\n')
-            .Select(l => l.TrimEnd('\r'))
-            .Where(l => !string.IsNullOrWhiteSpace(l))
-            .ToList();
+    public void AddBarcode(string barcode)
+    {
+        var trimmed = barcode.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+            return;
+
+        var entry = new BarcodeEntry
+        {
+            Barcode = trimmed,
+            Timestamp = DateTime.Now,
+            SequenceNumber = _barcodes.Count + 1
+        };
+        SubscribeToBarcode(entry);
+        _barcodes.Add(entry);
+
+        RecalculateDuplicatesAndInvalidLengths();
+
+        BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
+        OnPropertyChanged(nameof(BarcodeCount));
+        OnPropertyChanged(nameof(DuplicateCount));
+        OnPropertyChanged(nameof(HasDuplicates));
+        OnPropertyChanged(nameof(InvalidLengthCount));
+        OnPropertyChanged(nameof(HasInvalidLength));
+        CommandManager.InvalidateRequerySuggested();
+    }
+
+    private void ClearAll()
+    {
+        foreach (var b in _barcodes.ToList())
+            UnsubscribeFromBarcode(b);
+        _barcodes.Clear();
+
+        BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
+        OnPropertyChanged(nameof(BarcodeCount));
+        OnPropertyChanged(nameof(DuplicateCount));
+        OnPropertyChanged(nameof(HasDuplicates));
+        OnPropertyChanged(nameof(InvalidLengthCount));
+        OnPropertyChanged(nameof(HasInvalidLength));
+        OnPropertyChanged(nameof(IsAllSelected));
+        OnPropertyChanged(nameof(SelectedCount));
+        OnPropertyChanged(nameof(HasSelected));
+        CommandManager.InvalidateRequerySuggested();
+    }
+
+    private void RemoveSelected()
+    {
+        var toRemove = _barcodes.Where(b => b.IsSelected).ToList();
+        foreach (var item in toRemove)
+        {
+            UnsubscribeFromBarcode(item);
+            _barcodes.Remove(item);
+        }
+
+        for (int i = 0; i < _barcodes.Count; i++)
+            _barcodes[i].SequenceNumber = i + 1;
+
+        RecalculateDuplicatesAndInvalidLengths();
+
+        BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
+        OnPropertyChanged(nameof(BarcodeCount));
+        OnPropertyChanged(nameof(DuplicateCount));
+        OnPropertyChanged(nameof(HasDuplicates));
+        OnPropertyChanged(nameof(InvalidLengthCount));
+        OnPropertyChanged(nameof(HasInvalidLength));
+        OnPropertyChanged(nameof(IsAllSelected));
+        OnPropertyChanged(nameof(SelectedCount));
+        OnPropertyChanged(nameof(HasSelected));
+    }
+
+    private void ClearSelection()
+    {
+        foreach (var b in _barcodes)
+            b.IsSelected = false;
+        OnPropertyChanged(nameof(SelectedCount));
+        OnPropertyChanged(nameof(IsAllSelected));
+        OnPropertyChanged(nameof(HasSelected));
+        CommandManager.InvalidateRequerySuggested();
+    }
+
+    private void RecalculateDuplicatesAndInvalidLengths()
+    {
+        var duplicateValues = _barcodes
+            .GroupBy(b => b.Barcode)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToHashSet();
+
+        foreach (var b in _barcodes)
+            b.IsDuplicate = duplicateValues.Contains(b.Barcode);
+
+        foreach (var b in _barcodes)
+            b.IsInvalidLength = b.Barcode.Length != BarcodeParser.ExpectedLength;
+    }
+
+    private void SubscribeToBarcode(BarcodeEntry entry)
+        => entry.PropertyChanged += OnBarcodePropertyChanged;
+
+    private void UnsubscribeFromBarcode(BarcodeEntry entry)
+        => entry.PropertyChanged -= OnBarcodePropertyChanged;
+
+    private void OnBarcodePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(BarcodeEntry.IsSelected))
+        {
+            OnPropertyChanged(nameof(SelectedCount));
+            OnPropertyChanged(nameof(IsAllSelected));
+            OnPropertyChanged(nameof(HasSelected));
+            CommandManager.InvalidateRequerySuggested();
+        }
+    }
 
     private void BrowseDirectory()
     {
@@ -167,18 +284,13 @@ public class NotepadScanViewModel : ViewModelBase
 
     private async Task SaveAsync()
     {
-        var lines = GetNonEmptyLines();
-        if (lines.Count == 0)
+        if (_barcodes.Count == 0)
         {
             StatusChanged?.Invoke(this, "Nothing to save.");
             return;
         }
 
-        var entries = lines.Select(l => new BarcodeEntry
-        {
-            Barcode = l,
-            Timestamp = DateTime.Now
-        }).ToList();
+        var entries = _barcodes.ToList();
 
         if (AppendToFile)
         {
