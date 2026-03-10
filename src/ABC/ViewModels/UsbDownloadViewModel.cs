@@ -226,6 +226,28 @@ public class UsbDownloadViewModel : ViewModelBase
         }
     }
 
+    public void HandleDeviceRemoved()
+    {
+        if (!IsConnected) return;
+
+        try
+        {
+            var availablePorts = System.IO.Ports.SerialPort.GetPortNames();
+            string ourPort = $"COM{SelectedPort}";
+
+            if (!availablePorts.Contains(ourPort))
+            {
+                LogService.Warning("[UsbDownloadViewModel] COM port {Port} disappeared - scanner was unplugged", ourPort);
+                Disconnect();
+                StatusChanged?.Invoke(this, $"Scanner disconnected - {ourPort} was removed.");
+            }
+        }
+        catch (Exception ex)
+        {
+            LogService.Error(ex, "[UsbDownloadViewModel] Error checking COM port after device removal");
+        }
+    }
+
     public void Cleanup()
     {
         if (IsConnected)

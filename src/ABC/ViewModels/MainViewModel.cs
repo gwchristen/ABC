@@ -62,6 +62,26 @@ public class MainViewModel : ViewModelBase
         TotalBarcodeCount = UsbDownload.BarcodeCount + BluetoothLive.BarcodeCount + RangeMaker.BarcodeCount;
     }
 
+    public void OnUsbDeviceRemoved()
+    {
+        LogService.Debug("[MainViewModel] USB device removal detected");
+
+        if (UsbDownload.IsConnected)
+            UsbDownload.HandleDeviceRemoved();
+
+        if (RangeMaker.IsConnected)
+            RangeMaker.HandleDeviceRemoved();
+
+        if (ScannerSettings.IsConnected)
+            ScannerSettings.HandleDeviceRemoved();
+    }
+
+    public void OnUsbDeviceArrived()
+    {
+        LogService.Debug("[MainViewModel] USB device arrival detected");
+        StatusMessage = "USB device detected.";
+    }
+
     public void OnShutdown()
     {
         UsbDownload.Cleanup();
