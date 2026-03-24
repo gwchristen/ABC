@@ -78,8 +78,7 @@ public class UsbDownloadViewModel : ViewModelBase
         }
         set
         {
-            if (value == null) return;
-            bool newValue = value.Value;
+            bool newValue = value ?? false;
             foreach (var b in _barcodes)
                 b.IsSelected = newValue;
             OnPropertyChanged(nameof(IsAllSelected));
