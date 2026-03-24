@@ -30,7 +30,7 @@
                 <TabItem Header="Bluetooth Live Scan">
                     <views:BluetoothLiveView DataContext="{Binding BluetoothLive}" />
                 </TabItem>
-                <TabItem Header="Notepad Scanner">
+                <TabItem Header="HID Scanner">
                     <views:NotepadScanView DataContext="{Binding NotepadScan}" />
                 </TabItem>
                 <TabItem Header="Range Maker">

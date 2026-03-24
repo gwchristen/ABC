@@ -215,6 +215,7 @@ public class RangeMakerViewModel : ViewModelBase
     public ICommand SaveCommand { get; }
     public ICommand RemoveSelectedCommand { get; }
     public ICommand ClearSelectionCommand { get; }
+    public ICommand AddManualBarcodeCommand { get; }
 
     public RangeMakerViewModel() : this(CreateDefaultScannerService()) { }
 
@@ -235,6 +236,7 @@ public class RangeMakerViewModel : ViewModelBase
         SaveCommand = new AsyncRelayCommand(async () => await SaveAsync(), () => !IsBusy && GeneratedRange.Count > 0);
         RemoveSelectedCommand = new RelayCommand(_ => RemoveSelected(), _ => !IsBusy && SelectedCount > 0);
         ClearSelectionCommand = new RelayCommand(_ => ClearSelection(), _ => SelectedCount > 0);
+        AddManualBarcodeCommand = new RelayCommand(_ => AddManualBarcode());
     }
 
     private static IScannerService CreateDefaultScannerService()
@@ -752,6 +754,36 @@ public class RangeMakerViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsAllSelected));
         OnPropertyChanged(nameof(HasSelected));
         CommandManager.InvalidateRequerySuggested();
+    }
+
+    private void AddManualBarcode()
+    {
+        var dialog = new Views.InputDialog();
+        dialog.Owner = Application.Current.MainWindow;
+        if (dialog.ShowDialog() == true)
+        {
+            string barcode = dialog.InputText.Trim();
+            if (!string.IsNullOrEmpty(barcode))
+            {
+                var entry = new BarcodeEntry
+                {
+                    Barcode = barcode,
+                    Timestamp = DateTime.Now,
+                    CodeType = "Manual",
+                    ScannerId = "Manual Entry",
+                    SequenceNumber = Barcodes.Count + 1
+                };
+                SubscribeToBarcode(entry);
+                Barcodes.Add(entry);
+                BarcodeCountChanged?.Invoke(this, EventArgs.Empty);
+                OnPropertyChanged(nameof(IsAllSelected));
+                OnPropertyChanged(nameof(SelectedCount));
+                OnPropertyChanged(nameof(HasSelected));
+                OnPropertyChanged(nameof(RangeSizeDisplay));
+                OnPropertyChanged(nameof(ShowRangeSizeDisplay));
+                StatusChanged?.Invoke(this, $"Manually added barcode: {barcode}");
+            }
+        }
     }
 
     private void SubscribeToBarcode(BarcodeEntry entry)
