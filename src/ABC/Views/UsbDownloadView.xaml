@@ -258,14 +258,12 @@
                 <Button Content="Remove Selected"
                         Style="{StaticResource DangerButton}"
                         Command="{Binding RemoveSelectedCommand}"
-                        VerticalAlignment="Center"
-                        Visibility="{Binding HasSelected, Converter={StaticResource BoolToVisibility}}" />
+                        VerticalAlignment="Center" />
                 <Button Content="Clear Selection"
                         Style="{StaticResource SecondaryButton}"
                         Command="{Binding ClearSelectionCommand}"
                         Margin="4,0,0,0"
-                        VerticalAlignment="Center"
-                        Visibility="{Binding HasSelected, Converter={StaticResource BoolToVisibility}}" />
+                        VerticalAlignment="Center" />
             </StackPanel>
 
             <Border Grid.Row="2" Style="{StaticResource CardBorder}" Margin="0">
