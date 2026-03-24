@@ -12,18 +12,9 @@ jobs:
     permissions:
       contents: read
 
-    strategy:
-      matrix:
-        framework: [ net8.0-windows10.0.22621.0, net9.0-windows10.0.22621.0 ]
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
 
       - name: Set up .NET 9
         uses: actions/setup-dotnet@v4
@@ -34,22 +25,22 @@ jobs:
         run: dotnet restore src/ABC/ABC.csproj
 
       - name: Build
-        run: dotnet build src/ABC/ABC.csproj -c Release -f ${{ matrix.framework }} --no-restore
+        run: dotnet build src/ABC/ABC.csproj -c Release -f net9.0-windows10.0.22621.0 --no-restore
 
       - name: Publish (self-contained, single file, win-x86)
         run: >
           dotnet publish src/ABC/ABC.csproj
           -c Release
-          -f ${{ matrix.framework }}
+          -f net9.0-windows10.0.22621.0
           -r win-x86
           --self-contained true
           -p:PublishSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true
           --no-restore
-          -o publish/${{ matrix.framework }}
+          -o publish/net9.0-windows10.0.22621.0
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ABC-${{ matrix.framework }}-win-x86
-          path: publish/${{ matrix.framework }}/
+          name: ABC-net9.0-windows10.0.22621.0-win-x86
+          path: publish/net9.0-windows10.0.22621.0/
