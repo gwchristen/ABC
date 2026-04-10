@@ -1,8 +1,15 @@
 <Solution>
   <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <BuildType Name="Release_1" />
     <Platform Name="Any CPU" />
+    <Platform Name="x86" />
   </Configurations>
   <Folder Name="/src/">
-    <Project Path="src/ABC/ABC.csproj" />
+    <Project Path="src/ABC/ABC.csproj">
+      <BuildType Solution="Debug|Any CPU" Project="Release" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
   </Folder>
 </Solution>
