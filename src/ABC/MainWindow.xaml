@@ -6,6 +6,7 @@
         xmlns:views="clr-namespace:ABC.Views"
         mc:Ignorable="d"
         Title="AEP Barcode Companion"
+        Icon="Resources/app.ico"
         Height="900" Width="1182"
         MinHeight="750" MinWidth="800"
         WindowStartupLocation="CenterScreen"

@@ -9,6 +9,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>ABC</AssemblyName>
     <RootNamespace>ABC</RootNamespace>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Configurations>Debug;Release;Release_1</Configurations>
@@ -22,6 +23,10 @@
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\app.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Serilog" Version="4.2.0" />
