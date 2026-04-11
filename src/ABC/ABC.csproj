@@ -35,10 +35,10 @@
     <None Remove="Libs\Opticon.csp2Ex.net.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Libs\Csp2.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="Libs\Csp2Ex.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="Libs\Opticon.csp2.net.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="Libs\Opticon.csp2Ex.net.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Libs\Csp2.dll" Link="Csp2.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Libs\Csp2Ex.dll" Link="Csp2Ex.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Libs\Opticon.csp2.net.dll" Link="Opticon.csp2.net.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Libs\Opticon.csp2Ex.net.dll" Link="Opticon.csp2Ex.net.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
