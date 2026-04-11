@@ -187,7 +187,8 @@ public class UsbDownloadViewModel : ViewModelBase
     private static IScannerService CreateDefaultScannerService()
     {
         // Use the real service if the Opticon DLL is present, otherwise fall back to mock
-        string dllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Opticon.csp2.net.dll");
+        string exeDir = Path.GetDirectoryName(Environment.ProcessPath ?? AppDomain.CurrentDomain.BaseDirectory) ?? AppDomain.CurrentDomain.BaseDirectory;
+        string dllPath = Path.Combine(exeDir, "Opticon.csp2.net.dll");
         bool useOpticon = File.Exists(dllPath);
         LogService.Debug("[UsbDownloadViewModel] Using {Service}", useOpticon ? "OpticonScannerService" : "MockScannerService");
         if (useOpticon)

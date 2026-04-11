@@ -526,7 +526,8 @@ public class OpticonScannerService : IScannerService
     {
         try
         {
-            string dllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Opticon.csp2.net.dll");
+            string exeDir = Path.GetDirectoryName(Environment.ProcessPath ?? AppDomain.CurrentDomain.BaseDirectory) ?? AppDomain.CurrentDomain.BaseDirectory;
+            string dllPath = Path.Combine(exeDir, "Opticon.csp2.net.dll");
             LogService.Debug($"[OpticonScannerService] LoadCsp2Type: trying DLL path: {dllPath}");
             if (!File.Exists(dllPath))
             {

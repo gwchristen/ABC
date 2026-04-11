@@ -240,7 +240,8 @@ public class RangeMakerViewModel : ViewModelBase
 
     private static IScannerService CreateDefaultScannerService()
     {
-        string dllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Opticon.csp2.net.dll");
+        string exeDir = Path.GetDirectoryName(Environment.ProcessPath ?? AppDomain.CurrentDomain.BaseDirectory) ?? AppDomain.CurrentDomain.BaseDirectory;
+        string dllPath = Path.Combine(exeDir, "Opticon.csp2.net.dll");
         bool useOpticon = File.Exists(dllPath);
         LogService.Debug("[RangeMakerViewModel] Using {Service}", useOpticon ? "OpticonScannerService" : "MockScannerService");
         if (useOpticon)
