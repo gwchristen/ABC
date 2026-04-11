@@ -8,7 +8,7 @@ namespace ABC.Services;
 
 /// <summary>
 /// Real implementation of IScannerService using the Opticon CSP2 .NET wrapper.
-/// Requires Opticon DLLs (Csp2.dll, Csp2Ex.dll, Opticon.csp2.net.dll, Opticon.csp2Ex.net.dll)
+/// Requires Opticon DLLs (Csp2Ex.dll, Opticon.csp2Ex.net.dll)
 /// to be present in the application output directory.
 /// Falls back gracefully if DLLs are not found.
 /// </summary>
@@ -531,9 +531,9 @@ public class OpticonScannerService : IScannerService
             string baseDir = AppContext.BaseDirectory;
             string exeDir = Path.GetDirectoryName(Environment.ProcessPath ?? baseDir) ?? baseDir;
 
-            string dllPath = Path.Combine(baseDir, "Opticon.csp2.net.dll");
+            string dllPath = Path.Combine(baseDir, "Opticon.csp2Ex.net.dll");
             if (!File.Exists(dllPath))
-                dllPath = Path.Combine(exeDir, "Opticon.csp2.net.dll");
+                dllPath = Path.Combine(exeDir, "Opticon.csp2Ex.net.dll");
             LogService.Debug($"[OpticonScannerService] LoadCsp2Type: trying DLL path: {dllPath}");
             if (!File.Exists(dllPath))
             {

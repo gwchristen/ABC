@@ -191,9 +191,9 @@ public class UsbDownloadViewModel : ViewModelBase
         // For normal builds, DLLs are next to the exe.
         string baseDir = AppContext.BaseDirectory;
         string exeDir = Path.GetDirectoryName(Environment.ProcessPath ?? baseDir) ?? baseDir;
-        string dllPath = Path.Combine(baseDir, "Opticon.csp2.net.dll");
+        string dllPath = Path.Combine(baseDir, "Opticon.csp2Ex.net.dll");
         if (!File.Exists(dllPath))
-            dllPath = Path.Combine(exeDir, "Opticon.csp2.net.dll");
+            dllPath = Path.Combine(exeDir, "Opticon.csp2Ex.net.dll");
         bool useOpticon = File.Exists(dllPath);
         LogService.Debug("[UsbDownloadViewModel] Using {Service}", useOpticon ? "OpticonScannerService" : "MockScannerService");
         if (useOpticon)
