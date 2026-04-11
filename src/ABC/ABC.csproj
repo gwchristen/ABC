@@ -22,25 +22,15 @@
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
+  <!-- Opticon native DLLs - must be present locally in the Libs folder.
+       These are proprietary files not checked into source control.
+       Place Csp2.dll, Csp2Ex.dll, Opticon.csp2.net.dll, and Opticon.csp2Ex.net.dll
+       in the src/ABC/Libs/ directory before building. -->
   <ItemGroup>
-    <None Remove="Libs\Csp2.dll" />
-    <None Remove="Libs\Csp2Ex.dll" />
-    <None Remove="Libs\Opticon.csp2.net.dll" />
-    <None Remove="Libs\Opticon.csp2Ex.net.dll" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Libs\Csp2.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Libs\Csp2Ex.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Libs\Opticon.csp2.net.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Libs\Opticon.csp2Ex.net.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <None Include="Libs\Csp2.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="Libs\Csp2Ex.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="Libs\Opticon.csp2.net.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="Libs\Opticon.csp2Ex.net.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
