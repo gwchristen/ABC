@@ -12,6 +12,7 @@
     <ApplicationIcon>Resources\app.ico</ApplicationIcon>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <EnableDefaultItemsIncludeGitIgnore>false</EnableDefaultItemsIncludeGitIgnore>
     <Configurations>Debug;Release;Release_1</Configurations>
     <Platforms>AnyCPU;x86</Platforms>
   </PropertyGroup>
